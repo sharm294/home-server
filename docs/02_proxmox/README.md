@@ -1,3 +1,8 @@
+<!--
+Copyright (c) 2025 sharm294
+SPDX-License-Identifier: MIT
+--->
+
 # Proxmox
 
 Proxmox is an open-source server virtualization platform that uses a single web interface to manage virtual machines (KVM) and containers (LXC), offering an enterprise-grade, cost-effective alternative to solutions like VMware for managing servers, storage, and networks.

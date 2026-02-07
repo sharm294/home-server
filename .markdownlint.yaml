@@ -1,7 +1,12 @@
-# Example markdownlint configuration with all properties set to their default value
+---
+# Copyright (c) 2025 sharm294
+# SPDX-License-Identifier: MIT
 
 # Default state for all rules
 default: true
 
 # disable line length rules: Markdown files will be wrapped by the viewer.
 MD013: false
+
+MD041:
+  allow_preamble: true

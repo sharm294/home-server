@@ -1,0 +1,66 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: MIT
+
+[project]
+name = "home-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Varun Sharma", email = "29899983+sharm294@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+namespace = true
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "ruff>=0.15.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 80
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D203", # incorrect-blank-line-before-class, incompatible with D211
+    "D212", # multi-line-summary-first-line, incompatible with D213
+    "COM812",
+]
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+# some rules should be ignored in tests
+"tests/**/*.py" = [
+    "S101", # allow asserts
+    "FBT", # allow booleans as positional arguments
+    "INP001", # don't require __init__.py
+]
+
+"docs/**/*.py" = [
+    "INP001", # don't require __init__.py
+]
+
+"__init__.py"= [
+    "D104" # don't require __init__.py files to have a module docstring
+]
+
+[tool.ruff.format]
+# Use double quotes for strings.
+quote-style = "double"
+# Use spaces instead of tabs.
+indent-style = "space"
+
+[tool.mypy]
+strict = true

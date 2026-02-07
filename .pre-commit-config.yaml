@@ -1,4 +1,7 @@
 ---
+# Copyright (c) 2025 sharm294
+# SPDX-License-Identifier: MIT
+
 repos:
   - repo: local
     hooks:
@@ -29,6 +32,11 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.19.1
+    hooks:
+      - id: mypy
+        additional_dependencies: []
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.20.0
     hooks:
