@@ -10,7 +10,12 @@ authors = [
     { name = "Varun Sharma", email = "29899983+sharm294@users.noreply.github.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pyinfra>=3.6.1",
+]
+
+[project.scripts]
+home-server = "home_server.main:main"
 
 [build-system]
 requires = ["uv_build>=0.10.0,<0.11.0"]
