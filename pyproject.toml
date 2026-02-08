@@ -24,6 +24,10 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 namespace = true
 
+# TODO(varunsh): need to remove eventually
+[tool.uv.sources]
+pyinfra = { path = "../pyinfra", editable = true }
+
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",

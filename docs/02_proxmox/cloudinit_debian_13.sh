@@ -107,6 +107,9 @@ create_vendor_config() {
 
     cat << EOF | tee /var/lib/vz/snippets/debian-13.yaml
 #cloud-config
+# for Proxmox, root login is needed
+disable_root: false
+
 runcmd:
     - apt-get update
     - apt-get install -y qemu-guest-agent

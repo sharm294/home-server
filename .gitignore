@@ -79,3 +79,5 @@ dmypy.json
 
 # PyPI configuration file
 .pypirc
+
+inventory.yaml

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+from pathlib import Path
 
 from home_server import hardening
 
@@ -15,16 +16,21 @@ def main():
         "harden", help="Run CIS Benchmark hardening checks"
     )
     harden.add_argument(
+        "inventory",
+        type=Path,
+        help="Path to an inventory file or hostname/IP address to run commands on. Use @local to run on this host.",
+    )
+    harden.add_argument(
         "--platform",
         choices=["server", "workstation"],
         default="server",
-        help="Choose the platform type to harden. Defaults to 'server'.",
+        help="Choose the CIS platform type to harden. Defaults to 'server'.",
     )
     harden.add_argument(
         "--level",
         choices=[1, 2],
         default=1,
-        help="Enable rules up to a level. Defaults to '1'.",
+        help="Enable CIS rules up to a level. Defaults to '1'.",
     )
     harden.add_argument(
         "--dry-run",
