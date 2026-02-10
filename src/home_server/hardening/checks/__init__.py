@@ -18,13 +18,40 @@ class Profile(enum.Enum):
     WS2 = enum.auto()
 
 
-class Check(abc.ABC):
-    def __init__(self, name: str, description: str):
-        self.name = name
-        self.description = description
+def get_profile(platform: str, level: int) -> Profile:
+    if platform == "server":
+        if level == 1:
+            return Profile.S1
+        if level == 2:
+            return Profile.S2
+        raise ValueError(f"Unexpected level for server: {level}")
+    if platform == "workstation":
+        if level == 1:
+            return Profile.S1
+        if level == 2:
+            return Profile.S2
+        raise ValueError(f"Unexpected level for server: {level}")
+    raise ValueError(f"Unexpected platform: {platform}")
 
-    def enabled(self, profile: Profile) -> bool:
-        profiles = self._minimum_profiles()
+
+class Check(abc.ABC):
+    name = None
+    description = None
+
+    @classmethod
+    def validate(cls):
+        if cls.name is None:
+            raise TypeError(
+                "Check subclasses must define a name as a class attribute"
+            )
+        if cls.description is None:
+            raise TypeError(
+                "Check subclasses must set a description as a class attribute"
+            )
+
+    @classmethod
+    def enabled(cls, profile: Profile) -> bool:
+        profiles = cls._minimum_profiles()
         if profile in profiles:
             return True
 
@@ -34,8 +61,10 @@ class Check(abc.ABC):
             return True
         return False
 
+    @classmethod
     @abc.abstractmethod
-    def run(self, state: State): ...
+    def run(cls, state: State): ...
 
+    @staticmethod
     @abc.abstractmethod
     def _minimum_profiles() -> set[Profile]: ...
