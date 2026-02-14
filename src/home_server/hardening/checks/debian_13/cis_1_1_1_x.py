@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from pyinfra.api.operation import add_op
 from pyinfra.operations import files, server
 
-from .. import Check, Profile
+from .. import Check, Feature, Profile
 
 if TYPE_CHECKING:
     from pyinfra.api import State
@@ -131,13 +131,126 @@ class CIS_6(Check):
         """
         remove_and_blacklist_kernel_module("overlay", state)
 
+    @classmethod
+    def features(cls) -> set[Feature]:
+        return {Feature.CONTAINERS}
+
     @staticmethod
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S2, Profile.WS2}
 
 
+class CIS_7(Check):
+    name = "1.1.1.7"
+    description = "Ensure squashfs kernel module is not available"
+
+    @classmethod
+    def run(cls, state: State):
+        """
+        Ensure the squashfs kernel module is not available by unloading it and
+        then disabling it.
+        """
+        remove_and_blacklist_kernel_module("squashfs", state)
+
+    @classmethod
+    def features(cls) -> set[Feature]:
+        return {Feature.SNAP}
+
+    @staticmethod
+    def _minimum_profiles() -> set[Profile]:
+        return {Profile.S2, Profile.WS2}
+
+
+class CIS_8(Check):
+    name = "1.1.1.8"
+    description = "Ensure udf kernel module is not available"
+
+    @classmethod
+    def run(cls, state: State):
+        """
+        Ensure the udf kernel module is not available by unloading it and
+        then disabling it.
+        """
+        remove_and_blacklist_kernel_module("udf", state)
+
+    @classmethod
+    def features(cls) -> set[Feature]:
+        return {Feature.SNAP}
+
+    @staticmethod
+    def _minimum_profiles() -> set[Profile]:
+        return {Profile.S2, Profile.WS2}
+
+
+class CIS_9(Check):
+    name = "1.1.1.9"
+    description = "Ensure firewire-core kernel module is not available"
+
+    @classmethod
+    def run(cls, state: State):
+        """
+        Ensure the firewire-core kernel module is not available by unloading it and
+        then disabling it.
+        """
+        remove_and_blacklist_kernel_module("firewire-core", state)
+
+    @staticmethod
+    def _minimum_profiles() -> set[Profile]:
+        return {Profile.S1, Profile.WS2}
+
+
+class CIS_10(Check):
+    name = "1.1.1.10"
+    description = "Ensure usb-storage kernel module is not available"
+
+    @classmethod
+    def run(cls, state: State):
+        """
+        Ensure the usb-storage kernel module is not available by unloading it and
+        then disabling it.
+        """
+        remove_and_blacklist_kernel_module("usb-storage", state)
+
+    @classmethod
+    def features(cls) -> set[Feature]:
+        return {Feature.USB_STORAGE}
+
+    @staticmethod
+    def _minimum_profiles() -> set[Profile]:
+        return {Profile.S1, Profile.WS2}
+
+
+class CIS_11(Check):
+    name = "1.1.1.11"
+    description = "Ensure unused filesystems kernel modules are not available"
+
+    @classmethod
+    def run(cls, state: State):
+        """
+        Ensure unused filesystems kernel modules are not available.
+        """
+        name = "Run audit script to print filesystems kernel modules"
+        add_op(state, server.shell, name, commands=["./cis_1_1_1_11.sh"])
+
+    @staticmethod
+    def _minimum_profiles() -> set[Profile]:
+        return {Profile.S1, Profile.WS1}
+
+
 def get_checks() -> list[Check]:
-    checks: list[Check] = [CIS_1, CIS_2, CIS_3, CIS_4, CIS_5, CIS_6]
+    checks: list[Check] = [
+        CIS_1,
+        CIS_2,
+        CIS_3,
+        CIS_4,
+        CIS_5,
+        CIS_6,
+        CIS_7,
+        CIS_8,
+        CIS_9,
+        CIS_10,
+        CIS_11,
+    ]
     for check in checks:
         check.validate()
     return checks

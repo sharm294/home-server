@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyinfra.api import State
 
+    from .. import Feature
+
 
 class Profile(enum.Enum):
     S1 = enum.auto()
@@ -50,16 +52,26 @@ class Check(abc.ABC):
             )
 
     @classmethod
-    def enabled(cls, profile: Profile) -> bool:
+    def enabled(
+        cls, profile: Profile, requested_features: set[Feature]
+    ) -> bool:
+        min_profile_exceeded = False
         profiles = cls._minimum_profiles()
         if profile in profiles:
-            return True
+            min_profile_exceeded = True
 
         if profile == Profile.S2 and Profile.S1 in profiles:
-            return True
+            min_profile_exceeded = True
         if profile == Profile.WS2 and Profile.WS1 in profiles:
-            return True
-        return False
+            min_profile_exceeded = True
+
+        if not min_profile_exceeded:
+            return False
+
+        return requested_features.isdisjoint(cls.features())
+
+    def features(cls) -> set[Feature]:
+        return {}
 
     @classmethod
     @abc.abstractmethod

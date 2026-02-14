@@ -33,6 +33,18 @@ def main():
         help="Enable CIS rules up to a level. Defaults to '1'.",
     )
     harden.add_argument(
+        "--features",
+        choices=[x.value for x in hardening.Feature],
+        action="extend",
+        nargs="+",
+        help="Some hardening rules interfere with features you may want to use. Pass any features you want to keep to disable rules that affect them, even if the default CIS platform/level enable them.",
+    )
+    harden.add_argument(
+        "--preset",
+        choices=[x.value for x in hardening.Preset],
+        help="Presets to set a variety of options in one convenient flag",
+    )
+    harden.add_argument(
         "--dry-run",
         action="store_true",
         help="Run checks without making changes",
