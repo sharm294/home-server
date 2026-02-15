@@ -1,0 +1,96 @@
+---
+version: '0.2'
+ignorePaths: [cspell.config.yaml]
+language: en
+dictionaryDefinitions: []
+dictionaries: [en_US, softwareTerms]
+words:
+  - bootable
+  - cloudinit
+  - codespell
+  - cramfs
+  - dmypy
+  - EDITMSG
+  - efidisk
+  - efitype
+  - envrc
+  - firewire
+  - freevxfs
+  - hfsplus
+  - htmlcov
+  - importdisk
+  - iothread
+  - jffs
+  - mypy
+  - ovmf
+  - partitioner
+  - preconfiguration
+  - pveversion
+  - pycache
+  - pyenv
+  - pyinfra
+  - pypirc
+  - pytest
+  - PyYAML
+  - qcow
+  - runcmd
+  - sdist
+  - seabios
+  - sharm
+  - Sharma
+  - shellcheck
+  - trixie
+  - UEFI
+  - urandom
+  - Varun
+  - varunsh
+  - venv
+  - virtio
+  - vmbr
+  - writethrough
+
+ignoreWords: []
+import: []
+languageSettings:
+  - languageId: shellscript
+    locale: '*'
+    dictionaries: [bash]
+    ignoreRegExpList:
+      - -\w+
+  - languageId: python
+    locale: '*'
+    dictionaries: [python]
+  - languageId: c,cpp
+    locale: '*'
+    dictionaries: [cpp]
+  - languageId: properties
+    locale: '*'
+    dictionaries: [cpp]
+    words:
+      - ALSA
+      - autoconfig
+      - bootdev
+      - cdrom
+      - chsh
+      - crypted
+      - debconf
+      - debootstrap
+      - espeak
+      - espeakup
+      - iflabel
+      - inittab
+      - keybox
+      - localechooser
+      - multiarch
+      - multiraid
+      - netcfg
+      - netinst
+      - nousb
+      - partman
+      - pkgsel
+      - preseed
+      - preseeded
+      - preseeding
+      - reusemethod
+      - tasksel
+      - udeb

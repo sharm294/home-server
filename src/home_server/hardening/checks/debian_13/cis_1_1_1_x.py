@@ -1,20 +1,32 @@
 # Copyright (c) 2026 sharm294
 # SPDX-License-Identifier: MIT
 
+"""Implement the CIS 1.1.1.x checks."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from pyinfra.api.operation import add_op
 from pyinfra.operations import files, server
 
-from .. import Check, Feature, Profile
+from home_server.hardening import Feature
+from home_server.hardening.checks import Check, Profile
+from home_server.hardening.checks.debian_13 import register_check
 
 if TYPE_CHECKING:
     from pyinfra.api import State
 
 
-def remove_and_blacklist_kernel_module(name: str, state: State):
+def remove_and_blacklist_kernel_module(name: str, state: State) -> None:
+    """
+    Remove and blacklist a kernel module.
+
+    Args:
+        name (str): Name of the kernel module
+        state (State): State to add the step to
+
+    """
     add_op(state, server.modprobe, name, present=False)
 
     add_op(
@@ -34,223 +46,212 @@ def remove_and_blacklist_kernel_module(name: str, state: State):
     )
 
 
-class CIS_1(Check):
+@register_check
+class CIS1(Check):
+    """Ensure cramfs kernel module is not available."""
+
     name = "1.1.1.1"
-    description = "Ensure cramfs kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the cramfs kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("cramfs", state)
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS1}
 
 
-class CIS_2(Check):
+@register_check
+class CIS2(Check):
+    """Ensure freevxfs kernel module is not available."""
+
     name = "1.1.1.2"
-    description = "Ensure freevxfs kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the freevxfs kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("freevxfs", state)
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS1}
 
 
-class CIS_3(Check):
+@register_check
+class CIS3(Check):
+    """Ensure hfs kernel module is not available."""
+
     name = "1.1.1.3"
-    description = "Ensure hfs kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the hfs kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("hfs", state)
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS1}
 
 
-class CIS_4(Check):
+@register_check
+class CIS4(Check):
+    """Ensure hfsplus kernel module is not available."""
+
     name = "1.1.1.4"
-    description = "Ensure hfsplus kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the hfsplus kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("hfsplus", state)
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS1}
 
 
-class CIS_5(Check):
+@register_check
+class CIS5(Check):
+    """Ensure jffs2 kernel module is not available."""
+
     name = "1.1.1.5"
-    description = "Ensure jffs2 kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the jffs2 kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("jffs2", state)
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS1}
 
 
-class CIS_6(Check):
+@register_check
+class CIS6(Check):
+    """Ensure overlay kernel module is not available."""
+
     name = "1.1.1.6"
-    description = "Ensure overlay kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the overlay kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("overlay", state)
 
     @classmethod
+    @override
     def features(cls) -> set[Feature]:
         return {Feature.CONTAINERS}
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S2, Profile.WS2}
 
 
-class CIS_7(Check):
+@register_check
+class CIS7(Check):
+    """Ensure squashfs kernel module is not available."""
+
     name = "1.1.1.7"
-    description = "Ensure squashfs kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the squashfs kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("squashfs", state)
 
     @classmethod
+    @override
     def features(cls) -> set[Feature]:
         return {Feature.SNAP}
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S2, Profile.WS2}
 
 
-class CIS_8(Check):
+@register_check
+class CIS8(Check):
+    """Ensure udf kernel module is not available."""
+
     name = "1.1.1.8"
-    description = "Ensure udf kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the udf kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("udf", state)
 
     @classmethod
+    @override
     def features(cls) -> set[Feature]:
         return {Feature.SNAP}
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S2, Profile.WS2}
 
 
-class CIS_9(Check):
+@register_check
+class CIS9(Check):
+    """Ensure firewire-core kernel module is not available."""
+
     name = "1.1.1.9"
-    description = "Ensure firewire-core kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the firewire-core kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("firewire-core", state)
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS2}
 
 
-class CIS_10(Check):
+@register_check
+class CIS10(Check):
+    """Ensure usb-storage kernel module is not available."""
+
     name = "1.1.1.10"
-    description = "Ensure usb-storage kernel module is not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure the usb-storage kernel module is not available by unloading it and
-        then disabling it.
-        """
+    @override
+    def run(cls, state: State) -> None:
         remove_and_blacklist_kernel_module("usb-storage", state)
 
     @classmethod
+    @override
     def features(cls) -> set[Feature]:
         return {Feature.USB_STORAGE}
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS2}
 
 
-class CIS_11(Check):
+@register_check
+class CIS11(Check):
+    """Ensure unused filesystems kernel modules are not available."""
+
     name = "1.1.1.11"
-    description = "Ensure unused filesystems kernel modules are not available"
 
     @classmethod
-    def run(cls, state: State):
-        """
-        Ensure unused filesystems kernel modules are not available.
-        """
-        name = "Run audit script to print filesystems kernel modules"
-        add_op(state, server.shell, name, commands=["./cis_1_1_1_11.sh"])
+    @override
+    def run(cls, state: State) -> None:
+        add_op(
+            state,
+            server.script,
+            "src/home_server/hardening/checks/debian_13/cis_1_1_1_11.sh",
+        )
 
     @staticmethod
+    @override
     def _minimum_profiles() -> set[Profile]:
         return {Profile.S1, Profile.WS1}
-
-
-def get_checks() -> list[Check]:
-    checks: list[Check] = [
-        CIS_1,
-        CIS_2,
-        CIS_3,
-        CIS_4,
-        CIS_5,
-        CIS_6,
-        CIS_7,
-        CIS_8,
-        CIS_9,
-        CIS_10,
-        CIS_11,
-    ]
-    for check in checks:
-        check.validate()
-    return checks

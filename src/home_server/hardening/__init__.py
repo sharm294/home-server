@@ -3,8 +3,6 @@
 
 import enum
 
-from .main import main
-
 
 class Feature(enum.StrEnum):
     CONTAINERS = "containers"  # for containerization like Docker and LXC
@@ -17,5 +15,7 @@ class Preset(enum.StrEnum):
     PROXMOX = "proxmox"
     AZURE = "azure"
 
+
+from .main import main  # noqa: E402
 
 __all__ = ["main"]

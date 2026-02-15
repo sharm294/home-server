@@ -5,11 +5,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .cis_1_1_1_x import get_checks as get_checks_1_1_1
-
 if TYPE_CHECKING:
-    from .. import Check
+    from home_server.hardening.checks import Check
 
-REGISTRY: list[Check] = [
-    *get_checks_1_1_1(),
-]
+REGISTRY: list[type[Check]] = []
+
+
+def register_check(check: type[Check]) -> type[Check]:
+    """
+    Register all the decorated checks to a registry using a decorator.
+
+    Args:
+        check (type[Check]): Check to register
+
+    Returns:
+        type[Check]: Registered check
+
+    """
+    check.validate()
+    REGISTRY.append(check)
+    return check
+
+
+from . import cis_1_1_1_x as cis_1_1_1_x  # noqa: E402

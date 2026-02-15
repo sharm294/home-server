@@ -3,6 +3,7 @@
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+# cspell:disable-next-line
 *.py[codz]
 *$py.class
 
@@ -40,7 +41,6 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *.cover
 *.py.cover
@@ -53,9 +53,6 @@ docs/_build/
 
 # pyenv
 .python-version
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
 
 # Environments
 .env

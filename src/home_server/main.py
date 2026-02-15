@@ -1,13 +1,17 @@
 # Copyright (c) 2026 sharm294
 # SPDX-License-Identifier: MIT
 
+"""Entry point for home_server."""
+
 import argparse
+import textwrap
 from pathlib import Path
 
 from home_server import hardening
 
 
-def main():
+def main() -> None:
+    """Entry point for home_server."""
     parser = argparse.ArgumentParser(description="Home Server Management Tool")
 
     subparser = parser.add_subparsers(dest="command", required=True)
@@ -15,10 +19,14 @@ def main():
     harden = subparser.add_parser(
         "harden", help="Run CIS Benchmark hardening checks"
     )
+    inventory_help = (
+        "Path to an inventory file or hostname/IP address to run"
+        "commands on. Use @local to run on this host."
+    )
     harden.add_argument(
         "inventory",
         type=Path,
-        help="Path to an inventory file or hostname/IP address to run commands on. Use @local to run on this host.",
+        help=inventory_help,
     )
     harden.add_argument(
         "--platform",
@@ -32,12 +40,17 @@ def main():
         default=1,
         help="Enable CIS rules up to a level. Defaults to '1'.",
     )
+    feature_help = textwrap.dedent("""
+        Some hardening rules interfere with features you may want to use. Pass
+        any features you want to keep to disable rules that affect them, even if
+        the default CIS platform/level enable them.""")
     harden.add_argument(
         "--features",
         choices=[x.value for x in hardening.Feature],
         action="extend",
         nargs="+",
-        help="Some hardening rules interfere with features you may want to use. Pass any features you want to keep to disable rules that affect them, even if the default CIS platform/level enable them.",
+        help=feature_help,
+        default=[],
     )
     harden.add_argument(
         "--preset",
@@ -53,7 +66,9 @@ def main():
 
     args = parser.parse_args()
 
-    assert hasattr(args, "func")
+    if not hasattr(args, "func"):
+        err_msg = "No subparser function found"
+        raise argparse.ArgumentError(None, err_msg)
     args.func(args)
 
 

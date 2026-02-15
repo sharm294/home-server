@@ -1,7 +1,16 @@
 # Copyright (c) 2026 sharm294
 # SPDX-License-Identifier: MIT
 
+"""
+Entry point for home_server harden CLI.
+
+Hardening is used to run a set of established rules on a host machine to improve
+its security. Currently, hardening uses CIS benchmarks to define the rules and
+settings to configure on the target host machine.
+"""
+
 import argparse
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -16,11 +25,21 @@ from .checks import get_profile
 from .checks.debian_13 import REGISTRY
 
 
-def make_inventory_from_yaml(path: Path):
+def make_inventory_from_yaml(path: Path) -> Inventory:
+    """
+    Construct an inventory object from a YAML config file.
+
+    Args:
+        path (Path): Path to the yaml config file
+
+    Returns:
+        Inventory: Built Inventory
+
+    """
     with path.open() as f:
         inventory_yaml: dict[str, Any] = yaml.safe_load(f)
     names = []
-    groups = {}
+    groups: dict[str, tuple[list[str], dict[str, str]]] = {}
     for group_name, group in inventory_yaml.items():
         hosts = group["hosts"]
         group_data = group["data"]
@@ -33,7 +52,8 @@ def make_inventory_from_yaml(path: Path):
     return Inventory((names, {}), **groups)
 
 
-def set_presets(args: argparse.Namespace):
+def set_presets(args: argparse.Namespace) -> None:
+    """Configure CLI arguments based on the set preset."""
     preset = args.preset
     if preset is None:
         return
@@ -43,7 +63,8 @@ def set_presets(args: argparse.Namespace):
 
 
 def main(args: argparse.Namespace) -> None:
-    # logging.basicConfig(level=logging.INFO)
+    """Entry point for home_server harden CLI."""
+    logging.basicConfig(level=logging.INFO)
     set_presets(args)
 
     profile = get_profile(args.platform, args.level)
@@ -52,7 +73,8 @@ def main(args: argparse.Namespace) -> None:
     if inventory_path.exists():
         inventory = make_inventory_from_yaml(inventory_path)
     else:
-        raise ValueError(f"Cannot find inventory at {inventory_path}")
+        err_msg = f"Cannot find inventory at {inventory_path}"
+        raise ValueError(err_msg)
 
     config = Config()
     state = State(inventory, config)
@@ -65,7 +87,6 @@ def main(args: argparse.Namespace) -> None:
         if check.enabled(profile, requested_features):
             check.run(state)
 
-    print("Running operations...")
     print_meta(state)
 
     if args.dry_run:

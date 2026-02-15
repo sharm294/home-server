@@ -27,7 +27,7 @@ Proxmox is an open-source server virtualization platform that uses a single web 
     c) Set a DNS server
 7. Review the settings and install Proxmox
 
-See the [offical walkthrough](https://pve.proxmox.com/wiki/Installation) of the installation for more details on the available options.
+See the [official walkthrough](https://pve.proxmox.com/wiki/Installation) of the installation for more details on the available options.
 
 ### Post-Installation
 

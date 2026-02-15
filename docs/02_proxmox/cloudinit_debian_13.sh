@@ -16,7 +16,7 @@ set -euo pipefail
 
 # User Parameters (update or set via env as needed) ----------------------------
 
-VMID_DEFAULT="${VMID_DEFAULT:-8000}"
+VM_ID_DEFAULT="${VM_ID_DEFAULT:-8000}"
 STORAGE="${STORAGE:-vm}" # Name of disk storage within Proxmox
 
 ## VM variables
@@ -81,22 +81,22 @@ download() {
 }
 
 # Check if VM ID exists
-_vmidexist() {
-    local vmid="$1"
+_vm_id_exist() {
+    local vm_id="$1"
     # Check if the VM ID exists in the list
-    if qm list | awk '{print $1}' | grep -q "^$vmid$"; then
+    if qm list | awk '{print $1}' | grep -q "^$vm_id$"; then
         return 0 # VM exists
     else
         return 1 # VM does not exist
     fi
 }
 
-get_valid_vmid() {
-    VMID=$VMID_DEFAULT
+get_valid_vm_id() {
+    VM_ID=$VM_ID_DEFAULT
 
-    while _vmidexist "$VMID"; do
-        echo "VM with ID $VMID exists."
-        read -r -p "Enter a new VM ID: " VMID
+    while _vm_id_exist "$VM_ID"; do
+        echo "VM with ID $VM_ID exists."
+        read -r -p "Enter a new VM ID: " VM_ID
     done
 }
 
@@ -123,36 +123,36 @@ create_vm() {
     # --vga serial0 --serial0 socket: set display to serial
     # --net0 virtio,bridge=vmbr0: create default network bridge to Proxmox
     echo "### Creating VM"
-    qm create "$VMID" --name "$TEMPLATE_NAME" \
+    qm create "$VM_ID" --name "$TEMPLATE_NAME" \
         --memory "$MEM" --balloon "$BALLOON" \
         --cpu host --cores "$CORES" --numa 1 --bios "$BIOS" --machine "$MACHINE" \
         --net0 virtio,bridge="${NET_BRIDGE}"${VLAN:+,tag=$VLAN}
-    qm set "$VMID" --agent enabled="$AGENT_ENABLE"${SSD:+,fstrim_cloned_disks=1}
+    qm set "$VM_ID" --agent enabled="$AGENT_ENABLE"${SSD:+,fstrim_cloned_disks=1}
     # --ostype l26: Linux 2.6 kernel
-    qm set "$VMID" --ostype l26
+    qm set "$VM_ID" --ostype l26
 
-    qm importdisk "$VMID" $WORK_DIR/$IMG "$STORAGE"
-    qm set "$VMID" --scsihw virtio-scsi-single \
-        --scsi0 "$STORAGE":vm-"$VMID"-disk-0,cache=writethrough,iothread=1${SSD:+,ssd=1,discard=on}
+    qm importdisk "$VM_ID" $WORK_DIR/$IMG "$STORAGE"
+    qm set "$VM_ID" --scsihw virtio-scsi-single \
+        --scsi0 "$STORAGE":vm-"$VM_ID"-disk-0,cache=writethrough,iothread=1${SSD:+,ssd=1,discard=on}
     # efidisk0 ...: Using UEFI requires creating an EFI disk
-    qm set "$VMID" --efidisk0 "$STORAGE":0,efitype=4m,,pre-enrolled-keys=1,size=1M
+    qm set "$VM_ID" --efidisk0 "$STORAGE":0,efitype=4m,,pre-enrolled-keys=1,size=1M
 
     create_vendor_config
 
-    qm set "$VMID" --tags "$TAG"
-    qm set "$VMID" --scsi1 "$STORAGE":cloudinit
-    qm set "$VMID" --rng0 source=/dev/urandom
-    qm set "$VMID" --ciuser "$CLOUD_USER"
-    qm set "$VMID" --cipassword "$CLOUD_PASSWORD"
-    qm set "$VMID" --boot c --bootdisk scsi0
-    qm set "$VMID" --tablet 0
-    qm set "$VMID" --ipconfig0 ip=dhcp,ip6=dhcp
-    qm set "$VMID" --sshkeys ~/.ssh/authorized_keys
-    qm set "$VMID" --cicustom "vendor=local:snippets/debian-13.yaml"
-    qm cloudinit update "$VMID"
-    qm set "$VMID" --description "Some notes"
+    qm set "$VM_ID" --tags "$TAG"
+    qm set "$VM_ID" --scsi1 "$STORAGE":cloudinit
+    qm set "$VM_ID" --rng0 source=/dev/urandom
+    qm set "$VM_ID" --ciuser "$CLOUD_USER"
+    qm set "$VM_ID" --cipassword "$CLOUD_PASSWORD"
+    qm set "$VM_ID" --boot c --bootdisk scsi0
+    qm set "$VM_ID" --tablet 0
+    qm set "$VM_ID" --ipconfig0 ip=dhcp,ip6=dhcp
+    qm set "$VM_ID" --sshkeys ~/.ssh/authorized_keys
+    qm set "$VM_ID" --cicustom "vendor=local:snippets/debian-13.yaml"
+    qm cloudinit update "$VM_ID"
+    qm set "$VM_ID" --description "Some notes"
 
-    qm template "$VMID"
+    qm template "$VM_ID"
 }
 
 cleanup() {
@@ -164,7 +164,7 @@ proxmox_check
 # download the base cloud image
 download
 # make sure VM ID is unused
-get_valid_vmid
+get_valid_vm_id
 # create vendor config for cloudinit first boot
 create_vendor_config
 # create the VM template
