@@ -7,10 +7,17 @@ import abc
 import enum
 from typing import TYPE_CHECKING
 
+from pyinfra.api.operation import add_op as pyinfra_add_op
+
 if TYPE_CHECKING:
     from pyinfra.api import State
+    from pyinfra.api.operation import OperationMeta
 
     from home_server.hardening import Feature
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
 
 
 class Profile(enum.Enum):
@@ -62,6 +69,44 @@ def get_profile(platform: str, level: int) -> Profile:
     raise ValueError(err_msg)
 
 
+class CheckMeta:
+    """Stores the OperationMeta objects associated with a particular check."""
+
+    def __init__(self, state: State) -> None:
+        """
+        Build a CheckMeta instance.
+
+        Args:
+            state (State): State to use for all ops
+
+        """
+        self.state = state
+
+        self.op_metas: dict[str, list[OperationMeta]] = {}
+
+    def add_op[**P, R](
+        self,
+        op_func: Callable[P, R],
+        *args: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> None:
+        """Add a PyInfra op to this check."""
+        self._add_op_meta(pyinfra_add_op(self.state, op_func, *args, **kwargs))
+
+    def _add_op_meta(self, retval: dict[str, OperationMeta]) -> None:
+        for host_name, op_meta in retval.items():
+            if host_name not in self.op_metas:
+                self.op_metas[host_name] = []
+            self.op_metas[host_name].append(op_meta)
+
+    def print(self) -> None:
+        """Print the data associated with this object."""
+        for host_name, op_metas in self.op_metas.items():
+            print(host_name)
+            for op_meta in op_metas:
+                print(op_meta.stdout)
+
+
 class Check(abc.ABC):
     """
     The base class of all checks.
@@ -70,6 +115,7 @@ class Check(abc.ABC):
     """
 
     name = ""
+    audit = False
 
     @classmethod
     def validate(cls) -> None:
@@ -83,7 +129,11 @@ class Check(abc.ABC):
 
     @classmethod
     def enabled(
-        cls, profile: Profile, requested_features: set[Feature]
+        cls,
+        profile: Profile,
+        requested_features: set[Feature],
+        *,
+        audit: bool,
     ) -> bool:
         """
         Determine if the check is enabled.
@@ -91,11 +141,13 @@ class Check(abc.ABC):
         Args:
             profile (Profile): Profile of checks to run
             requested_features (set[Feature]): Features that should be enabled
+            audit (bool): True if running in audit mode
 
         Returns:
             bool: Whether the check should run.
 
         """
+        # make sure the set profile includes the check
         min_profile_exceeded = False
         profiles = cls._minimum_profiles()
         if profile in profiles:
@@ -109,7 +161,16 @@ class Check(abc.ABC):
         if not min_profile_exceeded:
             return False
 
-        return requested_features.isdisjoint(cls.features())
+        # if the check negatively affects any feature that has been requested,
+        # disable it
+        requested_features_disabled = requested_features.isdisjoint(
+            cls.features(),
+        )
+        if not requested_features_disabled:
+            return False
+
+        # ensure the class's audit status matches the CLI setting
+        return audit == cls.audit
 
     @classmethod
     def features(cls) -> set[Feature]:
@@ -125,7 +186,7 @@ class Check(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def run(cls, state: State) -> None:
+    def run(cls, state: State) -> CheckMeta:
         """
         Add the check to the current state.
 

@@ -44,9 +44,10 @@ line-length = 80
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "COM812", # missing trailing comma: ruff warns this rule may cause conflicts
     "D203", # incorrect-blank-line-before-class, incompatible with D211
     "D212", # multi-line-summary-first-line, incompatible with D213
-    "COM812",
+    "T201", # allow prints while project is still in progress
 ]
 fixable = ["ALL"]
 

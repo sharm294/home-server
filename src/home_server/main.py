@@ -17,7 +17,8 @@ def main() -> None:
     subparser = parser.add_subparsers(dest="command", required=True)
 
     harden = subparser.add_parser(
-        "harden", help="Run CIS Benchmark hardening checks"
+        "harden",
+        help="Run CIS Benchmark hardening checks",
     )
     inventory_help = (
         "Path to an inventory file or hostname/IP address to run"
@@ -60,7 +61,12 @@ def main() -> None:
     harden.add_argument(
         "--dry-run",
         action="store_true",
-        help="Run checks without making changes",
+        help="Don't execute operations on target hosts",
+    )
+    harden.add_argument(
+        "--audit",
+        action="store_true",
+        help="Audit the system and view any manual fixes needed",
     )
     harden.set_defaults(func=hardening.main)
 

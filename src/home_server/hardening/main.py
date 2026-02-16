@@ -21,7 +21,7 @@ from pyinfra.api.operations import run_ops
 from pyinfra_cli.prints import print_meta
 
 from . import Feature, Preset
-from .checks import get_profile
+from .checks import CheckMeta, get_profile
 from .checks.debian_13 import REGISTRY
 
 
@@ -82,10 +82,12 @@ def main(args: argparse.Namespace) -> None:
     connect_all(state)
 
     requested_features = set(args.features)
+    op_metas: dict[str, CheckMeta] = {}
 
     for check in REGISTRY:
-        if check.enabled(profile, requested_features):
-            check.run(state)
+        if check.enabled(profile, requested_features, audit=args.audit):
+            op_meta = check.run(state)
+            op_metas[check.name] = op_meta
 
     print_meta(state)
 
@@ -93,3 +95,17 @@ def main(args: argparse.Namespace) -> None:
         return
 
     run_ops(state)
+
+    for check_name, meta in op_metas.items():
+        print(check_name)
+        meta.print()
+
+    # ruff: disable[ERA001]
+    # for check_name, retval in cmd_outputs.items():
+    #     print(check_name)
+    #     for host_name, op_meta in retval.items():
+    #         print(host_name)
+    #         # print(op_meta._commands)
+    #         print(op_meta.stdout)
+    #         print(op_meta.stderr)
+    # ruff: enable[ERA001]

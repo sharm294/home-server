@@ -7,18 +7,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, override
 
-from pyinfra.api.operation import add_op
 from pyinfra.operations import files, server
 
 from home_server.hardening import Feature
-from home_server.hardening.checks import Check, Profile
+from home_server.hardening.checks import Check, CheckMeta, Profile
 from home_server.hardening.checks.debian_13 import register_check
 
 if TYPE_CHECKING:
     from pyinfra.api import State
 
 
-def remove_and_blacklist_kernel_module(name: str, state: State) -> None:
+def remove_and_blacklist_kernel_module(name: str, state: State) -> CheckMeta:
     """
     Remove and blacklist a kernel module.
 
@@ -27,23 +26,21 @@ def remove_and_blacklist_kernel_module(name: str, state: State) -> None:
         state (State): State to add the step to
 
     """
-    add_op(state, server.modprobe, name, present=False)
-
-    add_op(
-        state,
+    meta = CheckMeta(state)
+    meta.add_op(server.modprobe, name, present=False)
+    meta.add_op(
         files.line,
         "/etc/modprobe.d/cis.conf",
         f"install {name} /bin/false",
         present=True,
     )
-
-    add_op(
-        state,
+    meta.add_op(
         files.line,
         "/etc/modprobe.d/cis.conf",
         f"blacklist {name}",
         present=True,
     )
+    return meta
 
 
 @register_check
@@ -54,8 +51,8 @@ class CIS1(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("cramfs", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("cramfs", state)
 
     @staticmethod
     @override
@@ -71,8 +68,8 @@ class CIS2(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("freevxfs", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("freevxfs", state)
 
     @staticmethod
     @override
@@ -88,8 +85,8 @@ class CIS3(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("hfs", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("hfs", state)
 
     @staticmethod
     @override
@@ -105,8 +102,8 @@ class CIS4(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("hfsplus", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("hfsplus", state)
 
     @staticmethod
     @override
@@ -122,8 +119,8 @@ class CIS5(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("jffs2", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("jffs2", state)
 
     @staticmethod
     @override
@@ -139,8 +136,8 @@ class CIS6(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("overlay", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("overlay", state)
 
     @classmethod
     @override
@@ -161,8 +158,8 @@ class CIS7(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("squashfs", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("squashfs", state)
 
     @classmethod
     @override
@@ -183,8 +180,8 @@ class CIS8(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("udf", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("udf", state)
 
     @classmethod
     @override
@@ -205,8 +202,8 @@ class CIS9(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("firewire-core", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("firewire-core", state)
 
     @staticmethod
     @override
@@ -222,8 +219,8 @@ class CIS10(Check):
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        remove_and_blacklist_kernel_module("usb-storage", state)
+    def run(cls, state: State) -> CheckMeta:
+        return remove_and_blacklist_kernel_module("usb-storage", state)
 
     @classmethod
     @override
@@ -241,15 +238,17 @@ class CIS11(Check):
     """Ensure unused filesystems kernel modules are not available."""
 
     name = "1.1.1.11"
+    audit = True
 
     @classmethod
     @override
-    def run(cls, state: State) -> None:
-        add_op(
-            state,
+    def run(cls, state: State) -> CheckMeta:
+        meta = CheckMeta(state)
+        meta.add_op(
             server.script,
             "src/home_server/hardening/checks/debian_13/cis_1_1_1_11.sh",
         )
+        return meta
 
     @staticmethod
     @override
