@@ -78,3 +78,5 @@ dmypy.json
 .pypirc
 
 inventory.yaml
+tmp.*
+tmp/

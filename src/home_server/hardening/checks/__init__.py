@@ -87,8 +87,8 @@ class CheckMeta:
     def add_op[**P, R](
         self,
         op_func: Callable[P, R],
-        *args: Any,  # noqa: ANN401
-        **kwargs: Any,  # noqa: ANN401
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Add a PyInfra op to this check."""
         self._add_op_meta(pyinfra_add_op(self.state, op_func, *args, **kwargs))

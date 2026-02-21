@@ -38,7 +38,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 80
 
 [tool.ruff.lint]
@@ -50,6 +50,9 @@ ignore = [
     "T201", # allow prints while project is still in progress
 ]
 fixable = ["ALL"]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true # allow Any type annotations on *args/**kwargs
 
 [tool.ruff.lint.per-file-ignores]
 # some rules should be ignored in tests
@@ -68,9 +71,7 @@ fixable = ["ALL"]
 ]
 
 [tool.ruff.format]
-# Use double quotes for strings.
 quote-style = "double"
-# Use spaces instead of tabs.
 indent-style = "space"
 
 [tool.mypy]

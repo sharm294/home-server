@@ -9,47 +9,89 @@ its security. Currently, hardening uses CIS benchmarks to define the rules and
 settings to configure on the target host machine.
 """
 
-import argparse
-import logging
-from pathlib import Path
-from typing import Any
+from __future__ import annotations
 
-import yaml
-from pyinfra.api import Config, Inventory, State
+import textwrap
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from pyinfra.api import Config, State
 from pyinfra.api.connect import connect_all
 from pyinfra.api.operations import run_ops
 from pyinfra_cli.prints import print_meta
+
+from home_server.inventory import make_inventory
 
 from . import Feature, Preset
 from .checks import CheckMeta, get_profile
 from .checks.debian_13 import REGISTRY
 
+if TYPE_CHECKING:
+    import argparse
+    from argparse import ArgumentParser, _SubParsersAction
 
-def make_inventory_from_yaml(path: Path) -> Inventory:
+
+def configure_parser(subparser: _SubParsersAction[ArgumentParser]) -> None:
     """
-    Construct an inventory object from a YAML config file.
+    Define the subparser for the harden command.
 
     Args:
-        path (Path): Path to the yaml config file
-
-    Returns:
-        Inventory: Built Inventory
+        subparser (_SubParsersAction[ArgumentParser]): Parent parser
 
     """
-    with path.open() as f:
-        inventory_yaml: dict[str, Any] = yaml.safe_load(f)
-    names = []
-    groups: dict[str, tuple[list[str], dict[str, str]]] = {}
-    for group_name, group in inventory_yaml.items():
-        hosts = group["hosts"]
-        group_data = group["data"]
-        groups[group_name] = ([], group_data)
-        for host in hosts:
-            host_name, host_data = next(iter(host.items()))
-            groups[group_name][0].append(host_name)
-            names.append((host_name, host_data or {}))
-
-    return Inventory((names, {}), **groups)
+    harden = subparser.add_parser(
+        "harden",
+        help="Run CIS Benchmark hardening checks",
+    )
+    inventory_help = (
+        "Path to an inventory file or hostname/IP address to run"
+        "commands on. Use @local to run on this host."
+    )
+    harden.add_argument(
+        "inventory",
+        type=Path,
+        help=inventory_help,
+    )
+    harden.add_argument(
+        "--platform",
+        choices=["server", "workstation"],
+        default="server",
+        help="Choose the CIS platform type to harden. Defaults to 'server'.",
+    )
+    harden.add_argument(
+        "--level",
+        choices=[1, 2],
+        default=1,
+        help="Enable CIS rules up to a level. Defaults to '1'.",
+    )
+    feature_help = textwrap.dedent("""
+        Some hardening rules interfere with features you may want to use. Pass
+        any features you want to keep to disable rules that affect them, even if
+        the default CIS platform/level enable them.""")
+    harden.add_argument(
+        "--features",
+        choices=[x.value for x in Feature],
+        action="extend",
+        nargs="+",
+        help=feature_help,
+        default=[],
+    )
+    harden.add_argument(
+        "--preset",
+        choices=[x.value for x in Preset],
+        help="Presets to set a variety of options in one convenient flag",
+    )
+    harden.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Don't execute operations on target hosts",
+    )
+    harden.add_argument(
+        "--audit",
+        action="store_true",
+        help="Audit the system and view any manual fixes needed",
+    )
+    harden.set_defaults(func=main)
 
 
 def set_presets(args: argparse.Namespace) -> None:
@@ -64,17 +106,11 @@ def set_presets(args: argparse.Namespace) -> None:
 
 def main(args: argparse.Namespace) -> None:
     """Entry point for home_server harden CLI."""
-    logging.basicConfig(level=logging.INFO)
     set_presets(args)
 
     profile = get_profile(args.platform, args.level)
 
-    inventory_path = Path(args.inventory)
-    if inventory_path.exists():
-        inventory = make_inventory_from_yaml(inventory_path)
-    else:
-        err_msg = f"Cannot find inventory at {inventory_path}"
-        raise ValueError(err_msg)
+    inventory = make_inventory(args.inventory)
 
     config = Config()
     state = State(inventory, config)

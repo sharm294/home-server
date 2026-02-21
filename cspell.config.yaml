@@ -21,6 +21,7 @@ words:
   - importdisk
   - iothread
   - jffs
+  - kwargs
   - metas
   - mypy
   - ovmf

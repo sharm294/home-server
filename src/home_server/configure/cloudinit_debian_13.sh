@@ -161,10 +161,14 @@ cleanup() {
 
 # make sure you're running on Proxmox host
 proxmox_check
+if _vm_id_exist "$VM_ID"; then
+    echo "VM with $VM_ID already exists"
+    exit 0
+fi
 # download the base cloud image
 download
 # make sure VM ID is unused
-get_valid_vm_id
+# get_valid_vm_id
 # create vendor config for cloudinit first boot
 create_vendor_config
 # create the VM template

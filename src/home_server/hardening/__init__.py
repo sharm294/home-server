@@ -16,6 +16,6 @@ class Preset(enum.StrEnum):
     AZURE = "azure"
 
 
-from .main import main  # noqa: E402
+from .main import configure_parser, main  # noqa: E402
 
-__all__ = ["main"]
+__all__ = ["configure_parser", "main"]
