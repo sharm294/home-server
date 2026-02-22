@@ -46,6 +46,7 @@ words:
   - urandom
   - Varun
   - varunsh
+  - pvetest
   - venv
   - virtio
   - vmbr
@@ -59,6 +60,13 @@ languageSettings:
     dictionaries: [bash]
     ignoreRegExpList:
       - -\w+
+    words:
+      - journalctl
+      - iucode
+      - nullglob
+      - listfile
+      - corosync
+      - proxmoxlib
   - languageId: python
     locale: '*'
     dictionaries: [python]
