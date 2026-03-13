@@ -3,7 +3,7 @@
 # Copyright (c) 2022 modem7
 # Copyright (c) 2023 UntouchedWagons
 # Copyright (c) 2026 sharm294
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT AND AGPL-3.0-or-later
 
 # This script will create a VM template for Proxmox based on the work in:
 # - https://github.com/modem7/public_scripts: create-ubuntu-cloud-template.sh

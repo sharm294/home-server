@@ -4,7 +4,7 @@
 # Copyright (c) 2021-2026 tteck
 # Copyright (c) 2026 sharm294
 # Author: tteckster | MickLesk (CanbiZ) | sharm294
-# License: MIT
+# SPDX-License-Identifier: MIT AND AGPL-3.0-or-later
 # https://github.com/community-scripts/ProxmoxVE/raw/a83cd9a80eb08e5a580c4cb9424a667432e82a27/LICENSE
 # cSpell: enable
 
