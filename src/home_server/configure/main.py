@@ -15,14 +15,12 @@ from typing import TYPE_CHECKING
 
 from pyinfra.api import Config, State
 from pyinfra.api.connect import connect_all
-from pyinfra.api.operation import add_op
 from pyinfra.api.operations import run_ops
-from pyinfra.operations import server
 from pyinfra_cli.prints import print_meta
 
 from home_server.inventory import make_inventory
 
-from . import Preset
+from . import Preset, proxmox_host
 
 if TYPE_CHECKING:
     import argparse
@@ -87,13 +85,10 @@ def main(args: argparse.Namespace) -> None:
     print_meta(state)
 
     if args.preset == Preset.PROXMOX_HOST:
-        add_op(
-            state,
-            server.script,
-            "src/home_server/configure/cloud_debian_13.sh",
-        )
+        proxmox_host.main(state)
     else:
-        pass
+        err_msg = f"Unexpected configure preset {args.preset} passed."
+        raise ValueError(err_msg)
 
     if args.dry_run:
         return
