@@ -9,11 +9,22 @@ This file defines how to configure the Proxmox host after installation.
 
 from pyinfra.api import State
 from pyinfra.api.operation import add_op
-from pyinfra.operations import server
+from pyinfra.operations import apt, server
 
 
 def main(state: State) -> None:
     """Entrypoint for configuring the Proxmox host."""
+    add_op(
+        state,
+        server.script,
+        "src/home_server/configure/install_pve.sh",
+    )
+
+    add_op(
+        state, apt.packages, ["proxmox-ve", "postfix", "open-iscsi", "chrony"]
+    )
+    add_op(state, apt.packages, ["os-prober"], present=False)
+
     add_op(
         state,
         server.script,
@@ -29,5 +40,5 @@ def main(state: State) -> None:
     add_op(
         state,
         server.script,
-        "src/home_server/configure/cloud_debian_13.sh",
+        "src/home_server/configure/cloudinit_debian_13.sh",
     )

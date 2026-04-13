@@ -8,8 +8,10 @@
 # https://github.com/community-scripts/ProxmoxVE/raw/a83cd9a80eb08e5a580c4cb9424a667432e82a27/LICENSE
 # cSpell: enable
 
+set -euo pipefail
+
 header_info() {
-  clear
+  # clear
   cat <<"EOF"
     ____ _    ________   ____             __     ____           __        ____
    / __ \ |  / / ____/  / __ \____  _____/ /_   /  _/___  _____/ /_____ _/ / /
@@ -66,7 +68,12 @@ get_pve_major_minor() {
 
 component_exists_in_sources() {
   local component="$1"
-  grep -h -E "^[^#]*Components:[^#]*\b${component}\b" /etc/apt/sources.list.d/*.sources 2>/dev/null | grep -q .
+
+  if grep -h -E "^[^#]*Components:[^#]*\b${component}\b" /etc/apt/sources.list.d/*.sources 2>/dev/null | grep -q .; then
+    return 0
+  fi
+
+  grep -h -E "^deb*.${component}" /etc/apt/sources.list 2>/dev/null | grep -q .
 }
 
 main() {
@@ -195,8 +202,9 @@ start_routines_9() {
 
   # check if deb822 Sources (*.sources) exist
   if find /etc/apt/sources.list.d/ -maxdepth 1 -name '*.sources' | grep -q .; then
-    whiptail --backtitle "Proxmox VE Helper Scripts" --title "Deb822 sources detected" \
-      --msgbox "Modern deb822 sources (*.sources) already exist.\n\nNo changes to sources format required.\n\nYou may still have legacy sources.list or .list files, which you can disable in the next step." 12 65 || true
+    # whiptail --backtitle "Proxmox VE Helper Scripts" --title "Deb822 sources detected" \
+    #   --msgbox "Modern deb822 sources (*.sources) already exist.\n\nNo changes to sources format required.\n\nYou may still have legacy sources.list or .list files, which you can disable in the next step." 12 65 || true
+    printf "Modern deb822 sources (*.sources) already exist.\n\nNo changes to sources format required.\n\nYou may still have legacy sources.list or .list files, which you can disable in the next step."
   else
     check_and_disable_legacy_sources() {
       local LEGACY_COUNT=0
@@ -539,7 +547,7 @@ post_routines_common() {
 #     "no" " " 3>&2 2>&1 1>&3)
 #   case $CHOICE in
 #   yes)
-    whiptail --backtitle "Proxmox VE Helper Scripts" --msgbox --title "Support Subscriptions" "Supporting the software's development team is essential. Check their official website's Support Subscriptions for pricing. Without their dedicated work, we wouldn't have this exceptional software." 10 58
+    # whiptail --backtitle "Proxmox VE Helper Scripts" --msgbox --title "Support Subscriptions" "Supporting the software's development team is essential. Check their official website's Support Subscriptions for pricing. Without their dedicated work, we wouldn't have this exceptional software." 10 58
     msg_info "Disabling subscription nag"
     # Create external script, this is needed because DPkg::Post-Invoke is fiddly with quote interpretation
     mkdir -p /usr/local/bin
@@ -664,15 +672,15 @@ EOF
 #   esac
 
   # Final message for all hosts in cluster and browser cache
-  whiptail --backtitle "Proxmox VE Helper Scripts" --title "Post-Install Reminder" --msgbox \
-    "IMPORTANT:
+#   whiptail --backtitle "Proxmox VE Helper Scripts" --title "Post-Install Reminder" --msgbox \
+#     "IMPORTANT:
 
-If you have multiple Proxmox VE hosts in a cluster, please make sure to run this script on every node individually.
+# If you have multiple Proxmox VE hosts in a cluster, please make sure to run this script on every node individually.
 
-After completing these steps, it is strongly recommended to REBOOT your node.
+# After completing these steps, it is strongly recommended to REBOOT your node.
 
-After the upgrade or post-install routines, always clear your browser cache or perform a hard reload (Ctrl+Shift+R) before using the Proxmox VE Web UI to avoid UI display issues.
-" 20 80
+# After the upgrade or post-install routines, always clear your browser cache or perform a hard reload (Ctrl+Shift+R) before using the Proxmox VE Web UI to avoid UI display issues.
+# " 20 80
 
 #   CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "REBOOT" --menu "\nReboot Proxmox VE now? (recommended)" 11 58 2 \
 #     "yes" " " \

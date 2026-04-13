@@ -6,6 +6,8 @@ dictionaryDefinitions: []
 dictionaries: [en_US, softwareTerms]
 words:
   - bootable
+  - cdrom
+  - chrony
   - cloudinit
   - codespell
   - cramfs
@@ -20,13 +22,19 @@ words:
   - htmlcov
   - importdisk
   - iothread
+  - iscsi
+  - isolinux
   - jffs
   - kwargs
   - metas
   - mypy
+  - netinst
   - ovmf
   - partitioner
   - preconfiguration
+  - preseed
+  - preseeded
+  - pvetest
   - pveversion
   - pycache
   - pyenv
@@ -46,7 +54,6 @@ words:
   - urandom
   - Varun
   - varunsh
-  - pvetest
   - venv
   - virtio
   - vmbr
@@ -61,12 +68,17 @@ languageSettings:
     ignoreRegExpList:
       - -\w+
     words:
-      - journalctl
-      - iucode
-      - nullglob
-      - listfile
       - corosync
+      - iucode
+      - journalctl
+      - listfile
+      - lvmthin
+      - nullglob
       - proxmoxlib
+      - pvesm
+      - rootdir
+      - thinpool
+      - wipefs
   - languageId: python
     locale: '*'
     dictionaries: [python]

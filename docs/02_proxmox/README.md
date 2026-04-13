@@ -9,12 +9,16 @@ Proxmox is an open-source server virtualization platform that uses a single web 
 
 ## Installation
 
+### Install using Proxmox ISO
+
+These instructions are for installing Proxmox VE directly using their ISO.
+
 1. Download the [latest Proxmox Virtual Environment (VE) ISO](https://www.proxmox.com/en/downloads/proxmox-virtual-environment/iso).
 2. Using [Rufus](https://rufus.ie/en/) or a similar tool for your platform, create a bootable USB using the downloaded ISO.
 3. On your server machine, insert the USB and enter the BIOS to boot from the USB. You may need to enable booting from USB and/or disable Secure Boot for this to work.
 4. Don't connect your server to the network (yet).
 
-### Proxmox Settings
+#### Proxmox Settings
 
 1. Select `Install Proxmox VE (Graphical)`
 2. Read and accept the EULA
@@ -29,10 +33,34 @@ Proxmox is an open-source server virtualization platform that uses a single web 
 
 See the [official walkthrough](https://pve.proxmox.com/wiki/Installation) of the installation for more details on the available options.
 
-### Post-Installation
+#### Post-Installation
 
 - In the BIOS boot menu, you may want to reorder the boot order so your Proxmox install will boot first. You can also disable the other drives from the boot menu if you'd like.
 - Plug in a network cable after configuring the server's static IP in your router. Use `ip addr show` on the server to view the MAC address and set your router to assign this MAC address your chosen static IP.
+
+### Installing on top of Debian
+
+Proxmox has [official instructions](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie) on how to install Proxmox VE on top of an existing installation of Debian.
+Based on these instructions, you can do a custom install of Proxmox VE.
+
+1. Download a Debian ISO to install. For example, you can use a *netinst* ISO for the [latest stable Debian](https://www.debian.org/CD/netinst/).
+2. Extract the ISO to a directory and enter it
+3. Copy `debian_13_preseed_proxmox.cfg` into the extracted directory as `./preseed/preseed.cfg`
+4. Update the `[PUBLIC_KEY]` string in the config with one or more public keys for SSH access
+5. Update the install disk name `/dev/disk/by-id/<ID>` to control where it gets installed
+6. Edit `./isolinux/txt.cfg` and replace all instances of `quiet`: `quiet auto=true priority=critical file=/cdrom/preseed/preseed.cfg`
+7. Do the same for `./boot/grub/grub.cfg`
+8. Using a tool like [Folder2ISO](https://github.com/imgdrive/Folder2ISO), convert the folder back to an ISO
+9. Using [Rufus](https://rufus.ie/en/) or a similar tool for your platform, create a bootable USB using the downloaded ISO.
+10. Select advanced install and go to automated to automatically install Debian 13
+
+Once the install completes, confirm you have SSH access to the machine. Then, from your management machine:
+
+Update the *.sh scripts as required and run:
+
+```bash
+uv run home-server configure --preset proxmox-host inventory.yaml
+```
 
 ## Hardening
 

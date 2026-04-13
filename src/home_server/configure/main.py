@@ -20,7 +20,7 @@ from pyinfra_cli.prints import print_meta
 
 from home_server.inventory import make_inventory
 
-from . import Preset, proxmox_host
+from . import Preset, proxmox_host, proxmox_vm
 
 if TYPE_CHECKING:
     import argparse
@@ -86,6 +86,8 @@ def main(args: argparse.Namespace) -> None:
 
     if args.preset == Preset.PROXMOX_HOST:
         proxmox_host.main(state)
+    elif args.preset == Preset.PROXMOX_VM:
+        proxmox_vm.main(state)
     else:
         err_msg = f"Unexpected configure preset {args.preset} passed."
         raise ValueError(err_msg)

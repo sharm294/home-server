@@ -16,8 +16,8 @@ set -euo pipefail
 
 # User Parameters (update or set via env as needed) ----------------------------
 
-VM_ID_DEFAULT="${VM_ID_DEFAULT:-8000}"
-STORAGE="${STORAGE:-vm}" # Name of disk storage within Proxmox
+VM_ID="${VM_ID:-8000}"
+STORAGE="${STORAGE:-local-lvm}" # Name of disk storage within Proxmox
 
 ## VM variables
 TEMPLATE_NAME="${TEMPLATE_NAME:-debian-13-template}"
@@ -76,7 +76,7 @@ download() {
             exit 1
         fi
 
-        qemu-img resize $IMG "$DISK_SIZE"
+        qemu-img resize --shrink $IMG "$DISK_SIZE"
     fi
 }
 
@@ -91,14 +91,14 @@ _vm_id_exist() {
     fi
 }
 
-get_valid_vm_id() {
-    VM_ID=$VM_ID_DEFAULT
+# get_valid_vm_id() {
+#     VM_ID=$VM_ID_DEFAULT
 
-    while _vm_id_exist "$VM_ID"; do
-        echo "VM with ID $VM_ID exists."
-        read -r -p "Enter a new VM ID: " VM_ID
-    done
-}
+#     while _vm_id_exist "$VM_ID"; do
+#         echo "VM with ID $VM_ID exists."
+#         read -r -p "Enter a new VM ID: " VM_ID
+#     done
+# }
 
 create_vendor_config() {
     if [ ! -d "/var/lib/vz/snippets" ]; then
