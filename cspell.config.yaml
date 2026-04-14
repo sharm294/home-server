@@ -68,6 +68,7 @@ languageSettings:
     ignoreRegExpList:
       - -\w+
     words:
+      - ashift
       - corosync
       - iucode
       - journalctl
@@ -76,9 +77,11 @@ languageSettings:
       - nullglob
       - proxmoxlib
       - pvesm
+      - resolv
       - rootdir
       - thinpool
       - wipefs
+      - zfspool
   - languageId: python
     locale: '*'
     dictionaries: [python]

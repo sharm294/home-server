@@ -31,6 +31,7 @@ ip link set "$nic" master vmbr0
 ip link set "$nic" up
 ip addr add "$ip_addr"/24 dev vmbr0
 ip route add default via 192.168.0.1
+echo "search home.arpa" >> /etc/resolv.conf
 
 # proxmox needs the hostname to resolve the IP address
 sed -i "s+127.0.1.1+$ip_addr+g" /etc/hosts
@@ -45,3 +46,6 @@ pvcreate "$drive"
 vgcreate "$vg_name" "$drive"
 lvcreate -l 100%FREE --thinpool "$thinpool_name" "$vg_name"
 pvesm add lvmthin "$storage_id" --vgname "$vg_name" --thinpool "$thinpool_name" --content images,rootdir
+
+zpool create -o ashift=12 storage mirror "/dev/disk/by-id/<ID>" "/dev/disk/by-id/<ID>"
+pvesm add zfspool zfs-storage -pool storage -content images,rootdir

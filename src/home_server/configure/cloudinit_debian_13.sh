@@ -16,7 +16,8 @@ set -euo pipefail
 
 # User Parameters (update or set via env as needed) ----------------------------
 
-VM_ID="${VM_ID:-8000}"
+TEMPLATE_VM_ID="${TEMPLATE_VM_ID:-8000}"
+VM_ID="${VM_ID:-100}"
 STORAGE="${STORAGE:-local-lvm}" # Name of disk storage within Proxmox
 
 ## VM variables
@@ -76,7 +77,8 @@ download() {
             exit 1
         fi
 
-        qemu-img resize --shrink $IMG "$DISK_SIZE"
+        # TODO: cannot resize as the image doesn't boot
+        # qemu-img resize --shrink $IMG "$DISK_SIZE"
     fi
 }
 
@@ -92,11 +94,11 @@ _vm_id_exist() {
 }
 
 # get_valid_vm_id() {
-#     VM_ID=$VM_ID_DEFAULT
+#     TEMPLATE_VM_ID=$VM_ID_DEFAULT
 
-#     while _vm_id_exist "$VM_ID"; do
-#         echo "VM with ID $VM_ID exists."
-#         read -r -p "Enter a new VM ID: " VM_ID
+#     while _vm_id_exist "$TEMPLATE_VM_ID"; do
+#         echo "VM with ID $TEMPLATE_VM_ID exists."
+#         read -r -p "Enter a new VM ID: " TEMPLATE_VM_ID
 #     done
 # }
 
@@ -123,36 +125,36 @@ create_vm() {
     # --vga serial0 --serial0 socket: set display to serial
     # --net0 virtio,bridge=vmbr0: create default network bridge to Proxmox
     echo "### Creating VM"
-    qm create "$VM_ID" --name "$TEMPLATE_NAME" \
+    qm create "$TEMPLATE_VM_ID" --name "$TEMPLATE_NAME" \
         --memory "$MEM" --balloon "$BALLOON" \
         --cpu host --cores "$CORES" --numa 1 --bios "$BIOS" --machine "$MACHINE" \
         --net0 virtio,bridge="${NET_BRIDGE}"${VLAN:+,tag=$VLAN}
-    qm set "$VM_ID" --agent enabled="$AGENT_ENABLE"${SSD:+,fstrim_cloned_disks=1}
+    qm set "$TEMPLATE_VM_ID" --agent enabled="$AGENT_ENABLE"${SSD:+,fstrim_cloned_disks=1}
     # --ostype l26: Linux 2.6 kernel
-    qm set "$VM_ID" --ostype l26
+    qm set "$TEMPLATE_VM_ID" --ostype l26
 
-    qm importdisk "$VM_ID" $WORK_DIR/$IMG "$STORAGE"
-    qm set "$VM_ID" --scsihw virtio-scsi-single \
-        --scsi0 "$STORAGE":vm-"$VM_ID"-disk-0,cache=writethrough,iothread=1${SSD:+,ssd=1,discard=on}
+    qm importdisk "$TEMPLATE_VM_ID" $WORK_DIR/$IMG "$STORAGE"
+    qm set "$TEMPLATE_VM_ID" --scsihw virtio-scsi-single \
+        --scsi0 "$STORAGE":vm-"$TEMPLATE_VM_ID"-disk-0,cache=writethrough,iothread=1${SSD:+,ssd=1,discard=on}
     # efidisk0 ...: Using UEFI requires creating an EFI disk
-    qm set "$VM_ID" --efidisk0 "$STORAGE":0,efitype=4m,,pre-enrolled-keys=1,size=1M
+    qm set "$TEMPLATE_VM_ID" --efidisk0 "$STORAGE":0,efitype=4m,,pre-enrolled-keys=1,size=1M
 
     create_vendor_config
 
-    qm set "$VM_ID" --tags "$TAG"
-    qm set "$VM_ID" --scsi1 "$STORAGE":cloudinit
-    qm set "$VM_ID" --rng0 source=/dev/urandom
-    qm set "$VM_ID" --ciuser "$CLOUD_USER"
-    qm set "$VM_ID" --cipassword "$CLOUD_PASSWORD"
-    qm set "$VM_ID" --boot c --bootdisk scsi0
-    qm set "$VM_ID" --tablet 0
-    qm set "$VM_ID" --ipconfig0 ip=dhcp,ip6=dhcp
-    qm set "$VM_ID" --sshkeys ~/.ssh/authorized_keys
-    qm set "$VM_ID" --cicustom "vendor=local:snippets/debian-13.yaml"
-    qm cloudinit update "$VM_ID"
-    qm set "$VM_ID" --description "Some notes"
+    qm set "$TEMPLATE_VM_ID" --tags "$TAG"
+    qm set "$TEMPLATE_VM_ID" --scsi1 "$STORAGE":cloudinit
+    qm set "$TEMPLATE_VM_ID" --rng0 source=/dev/urandom
+    qm set "$TEMPLATE_VM_ID" --ciuser "$CLOUD_USER"
+    qm set "$TEMPLATE_VM_ID" --cipassword "$CLOUD_PASSWORD"
+    qm set "$TEMPLATE_VM_ID" --boot c --bootdisk scsi0
+    qm set "$TEMPLATE_VM_ID" --tablet 0
+    qm set "$TEMPLATE_VM_ID" --ipconfig0 ip=dhcp,ip6=dhcp
+    qm set "$TEMPLATE_VM_ID" --sshkeys ~/.ssh/authorized_keys
+    qm set "$TEMPLATE_VM_ID" --cicustom "vendor=local:snippets/debian-13.yaml"
+    qm cloudinit update "$TEMPLATE_VM_ID"
+    qm set "$TEMPLATE_VM_ID" --description "Some notes"
 
-    qm template "$VM_ID"
+    qm template "$TEMPLATE_VM_ID"
 }
 
 cleanup() {
@@ -161,8 +163,8 @@ cleanup() {
 
 # make sure you're running on Proxmox host
 proxmox_check
-if _vm_id_exist "$VM_ID"; then
-    echo "VM with $VM_ID already exists"
+if _vm_id_exist "$TEMPLATE_VM_ID"; then
+    echo "VM with $TEMPLATE_VM_ID already exists"
     exit 0
 fi
 # download the base cloud image
@@ -175,3 +177,9 @@ create_vendor_config
 create_vm
 # cleanup files
 cleanup
+
+qm clone "$TEMPLATE_VM_ID" "$VM_ID" --name "main" --full 1
+qm set "$VM_ID" --tags "debian,debian-13"
+qm resize "$VM_ID" scsi0 50G
+qm set "$VM_ID" --cores 4 --memory 8192 --balloon 2048
+qm start "$VM_ID"
