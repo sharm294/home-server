@@ -49,3 +49,22 @@ pvesm add lvmthin "$storage_id" --vgname "$vg_name" --thinpool "$thinpool_name" 
 
 zpool create -o ashift=12 storage mirror "/dev/disk/by-id/<ID>" "/dev/disk/by-id/<ID>"
 pvesm add zfspool zfs-storage -pool storage -content images,rootdir
+
+# https://blog.kye.dev/proxmox-zfs-mounts/
+zfs create storage/media_root
+zfs create storage/nas
+
+# create a mapped group and user for LXC
+groupadd -g 110000 nas_users
+useradd -u 101000 -s /usr/sbin/nologin -M -g nas_users nas_admin
+chown -R nas_admin:nas_users /storage/media_root
+chown -R nas_admin:nas_users /storage/nas
+
+pveam download local debian-13-standard_13.1-2_amd64.tar.zst
+pct create 1000 local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst --rootfs local-lvm:8 --password yourpassword --net0 name=eth0,bridge=vmbr0,ip=dhcp --cores 1 --memory 1024
+# fix "Systemd 257 detected. You may need to enable nesting." warning
+pct set 1000 --features nesting=1
+pct set 1000 --mp0 /storage/nas,mp=/mnt/nas
+pct set 1000 --mp1 /storage/media_root,mp=/mnt/media_root
+pct start 1000
+pct push 1000 ~/.ssh/authorized_keys /root/.ssh/authorized_keys

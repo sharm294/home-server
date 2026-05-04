@@ -7,6 +7,7 @@ import enum
 class Preset(enum.StrEnum):
     PROXMOX_HOST = "proxmox-host"
     PROXMOX_VM = "proxmox-vm"
+    PROXMOX_CONTAINER = "proxmox-container"
 
 
 from .main import configure_parser, main  # noqa: E402

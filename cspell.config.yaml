@@ -68,19 +68,28 @@ languageSettings:
     ignoreRegExpList:
       - -\w+
     words:
+      - adfiles
+      - appledouble
       - ashift
+      - changeme
       - corosync
       - iucode
       - journalctl
       - listfile
       - lvmthin
+      - nologin
       - nullglob
       - proxmoxlib
+      - pveam
       - pvesm
       - resolv
+      - rfork
       - rootdir
       - thinpool
+      - vztmpl
       - wipefs
+      - xattr
+      - yourpassword
       - zfspool
   - languageId: python
     locale: '*'
