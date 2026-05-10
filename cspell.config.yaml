@@ -6,8 +6,13 @@ dictionaryDefinitions: []
 dictionaries: [en_US, softwareTerms]
 words:
   - bootable
+  - bootdisk
   - cdrom
+  - changeme
   - chrony
+  - cicustom
+  - cipassword
+  - ciuser
   - cloudinit
   - codespell
   - cramfs
@@ -29,6 +34,7 @@ words:
   - metas
   - mypy
   - netinst
+  - ostype
   - ovmf
   - partitioner
   - preconfiguration
@@ -44,11 +50,13 @@ words:
   - PyYAML
   - qcow
   - runcmd
+  - scsihw
   - sdist
   - seabios
   - sharm
   - Sharma
   - shellcheck
+  - sshkeys
   - trixie
   - UEFI
   - urandom
@@ -71,7 +79,6 @@ languageSettings:
       - adfiles
       - appledouble
       - ashift
-      - changeme
       - corosync
       - iucode
       - journalctl

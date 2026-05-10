@@ -77,3 +77,110 @@ class VmIdExists(FactBase):  # type: ignore[misc]
     @override
     def process(self, output: list[str]) -> bool:
         return bool(int(output[0].strip()))
+
+
+class VmStatus(FactBase):  # type: ignore[misc]
+    """
+    Return the status of a VM (running, stopped, paused).
+
+    Usage: host.get_fact(VmStatus, vm_id=8000)
+    """
+
+    @override
+    def command(self, vm_id: int) -> str:
+        return f"qm status {vm_id}"
+
+    @override
+    def requires_command(self) -> str:
+        return "qm"
+
+    @override
+    def process(self, output: list[str]) -> str:
+        # output format: "status: running" or "status: stopped"
+        if output and "status:" in output[0]:
+            return output[0].split()[-1]
+        return "unknown"
+
+
+class VmConfig(FactBase):  # type: ignore[misc]
+    """
+    Return the current configuration of a VM as a dict.
+
+    Usage: host.get_fact(VmConfig, vm_id=8000)
+
+    Returns a dict with keys like: memory, cores, sockets, cpu,
+    agent, ostype, scsihw, efidisk0, tags, scsi1, rng0, ciuser,
+    cipassword, boot, bootdisk, tablet, ipconfig0, sshkeys, etc.
+    """
+
+    @override
+    def command(self, vm_id: int) -> str:
+        return f"qm config {vm_id}"
+
+    @override
+    def requires_command(self) -> str:
+        return "qm"
+
+    @override
+    def process(self, output: list[str]) -> dict[str, Any]:
+        config = {}
+        for line_raw in output:
+            line = line_raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip()
+                value = value.strip()
+                config[key] = value
+        return config
+
+
+class DiskSize(FactBase):  # type: ignore[misc]
+    """
+    Return the size of a VM disk in GiB.
+
+    Usage: host.get_fact(DiskSize, vm_id=8000, disk_id='scsi0')
+
+    Returns the disk size as a float or None if disk not found.
+    """
+
+    @override
+    def command(self, vm_id: int, disk_id: str) -> str:
+        # Use qm config and parse the disk entry
+        return f"qm config {vm_id} | grep '^{disk_id}:' | head -1"
+
+    @override
+    def requires_command(self) -> str:
+        return "qm"
+
+    @override
+    def process(self, output: list[str]) -> float | None:
+        if not output or not output[0].strip():
+            return None
+        # output format: "scsi0: local:vm-100-disk-0,size=50G"
+        # or "scsi0: local-lvm:vm-100-disk-0,size=50G"
+        line = output[0].strip()
+        if ":" not in line:
+            return None
+        value_part = line.split(":", 1)[1].strip()
+        # Parse size from comma-separated values
+        for part in value_part.split(","):
+            if part.startswith("size="):
+                size_str = part.split("=", 1)[1].strip()
+                # Convert G/T/M suffix to GiB
+                multiplier = 1.0
+                if size_str.endswith("G"):
+                    size_str = size_str[:-1]
+                    multiplier = 1.0
+                elif size_str.endswith("T"):
+                    size_str = size_str[:-1]
+                    multiplier = 1024.0
+                elif size_str.endswith("M"):
+                    size_str = size_str[:-1]
+                    multiplier = 1.0 / 1024
+                try:
+                    return float(size_str) * multiplier
+                except ValueError:
+                    return None
+        return None
