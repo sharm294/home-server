@@ -1,0 +1,36 @@
+{# Copyright (c) 2026 sharm294 #}
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+
+[global]
+   workgroup = {{ samba_workgroup }}
+   server string = Samba Server
+   server role = standalone server
+   log file = /var/log/samba/log.%m
+   max log size = 50
+   dns proxy = no
+   map to guest = never
+   min protocol = SMB2
+
+   # macOS compatibility (fruit VFS)
+   vfs objects = fruit streams_xattr
+   fruit:metadata = stream
+   fruit:model = MacSamba
+   fruit:posix_rename = yes
+   fruit:veto_appledouble = no
+   fruit:nfs_aces = no
+   fruit:wipe_intentionally_left_blank_rfork = yes
+   fruit:delete_empty_adfiles = yes
+
+{% for share in samba_shares %}
+[{{ share.name }}]
+   path = {{ share.path }}
+   comment = {{ share.comment }}
+   read only = no
+   browseable = yes
+   valid users = {{ samba_user }}
+   force user = {{ samba_user }}
+   force group = {{ samba_group }}
+   create mask = {{ share.create_mask | default('0664') }}
+   directory mask = {{ share.directory_mask | default('0775') }}
+
+{% endfor %}

@@ -1,0 +1,9 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+target_vm_id: 100
+target_name: main
+target_disk_size: 50G
+target_additional_tags: ""
+template_vm_id: 8000

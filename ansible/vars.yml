@@ -1,0 +1,26 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+pve_api_host: pve_node_ip
+node: node_name
+
+pve_iso_storage: iso
+pve_snippets_storage: templates
+pve_template_storage: templates
+
+ci_user_name: username
+ci_user_password_hash: # mkpasswd --method=SHA-512 --rounds=4096mkpasswd --method=SHA-512 --rounds=4096
+
+disk_format: qcow2
+
+templates:
+  debian:
+    vmid: 8000
+    name: debian-13-cloudimage
+
+    iso_url: https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2
+    checksum_url: https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS
+    checksum_algorithm: sha512
+    checksum_regexp: ([a-fA-F0-9]{128})\s+debian-13-genericcloud-amd64.qcow2
+    tags: [debian, debian-13, template]

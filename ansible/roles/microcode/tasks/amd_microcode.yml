@@ -1,0 +1,62 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Create microcode cache directory
+  ansible.builtin.file:
+    path: "{{ microcode_cache_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download AMD microcode package index
+  ansible.builtin.get_url:
+    url: "https://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode///"
+    dest: "{{ microcode_cache_dir }}/amd64-microcode-index.html"
+    mode: "0644"
+  register: amd_microcode_index
+  failed_when: false
+  changed_when: false
+
+- name: Get list of available AMD microcode packages
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      grep -o 'href="[^"]*amd64.deb"' "{{ microcode_cache_dir }}/amd64-microcode-index.html" | sed 's/href="//;s/"//' | sort
+  register: amd_microcode_list
+  failed_when: false
+  changed_when: false
+
+- name: Display available AMD microcode packages
+  ansible.builtin.debug:
+    msg: "Available AMD microcode packages: {{ amd_microcode_list.stdout_lines }}"
+
+- name: Install AMD microcode (latest available)
+  block:
+    - name: Get the latest AMD microcode package
+      ansible.builtin.set_fact:
+        amd_microcode_package: "{{ amd_microcode_list.stdout_lines | last | default('') }}"
+
+    - name: Fail if no AMD microcode packages found
+      ansible.builtin.fail:
+        msg: No AMD microcode packages found
+      when: amd_microcode_package == ""
+
+    - name: Download AMD microcode package
+      ansible.builtin.get_url:
+        url: "https://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode/{{ amd_microcode_package }}"
+        dest: "{{ microcode_cache_dir }}/{{ amd_microcode_package }}"
+        mode: "0644"
+      register: download_result
+      when: amd_microcode_package != ""
+
+    - name: Install AMD microcode package
+      ansible.builtin.apt:
+        deb: "{{ microcode_cache_dir }}/{{ amd_microcode_package }}"
+        state: present
+      when: amd_microcode_package != ""
+
+    - name: Clean up microcode package
+      ansible.builtin.file:
+        path: "{{ microcode_cache_dir }}/{{ amd_microcode_package }}"
+        state: absent
+      when: amd_microcode_package != ""

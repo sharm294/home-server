@@ -1,0 +1,5 @@
+---
+# ansible-lint configuration for this repository
+# Skip the var-naming rule which is overly prescriptive for this project
+skip_list:
+  - var-naming

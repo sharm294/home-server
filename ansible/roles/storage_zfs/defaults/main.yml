@@ -1,0 +1,7 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+zfs_pool_name: storage
+zfs_drive_1: /dev/disk/by-id/ata-EXAMPLE1
+zfs_drive_2: /dev/disk/by-id/ata-EXAMPLE2

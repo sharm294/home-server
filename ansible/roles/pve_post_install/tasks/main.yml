@@ -1,0 +1,34 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Get Proxmox VE version
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      pveversion | awk -F'/' '{print $2}' | awk -F'-' '{print $1}'
+  register: pve_version_result
+  changed_when: false
+
+- name: Parse PVE major and minor versions
+  ansible.builtin.set_fact:
+    pve_version: "{{ pve_version_result.stdout }}"
+    pve_major: "{{ pve_version_result.stdout.split('.')[0] }}"
+    pve_minor: "{{ pve_version_result.stdout.split('.')[1] | default('0') }}"
+
+- name: Display detected PVE version
+  ansible.builtin.debug:
+    msg: "Detected Proxmox VE version: {{ pve_version }} (Major: {{ pve_major }}, Minor: {{ pve_minor }})"
+
+- name: Run post-install routines for PVE 8.x
+  ansible.builtin.include_tasks: pve8_routines.yml
+  when: pve_major | int == 8
+
+- name: Run post-install routines for PVE 9.x
+  ansible.builtin.include_tasks: pve9_routines.yml
+  when: pve_major | int == 9
+
+- name: Fail if PVE version is not supported
+  ansible.builtin.fail:
+    msg: "Unsupported Proxmox VE major version: {{ pve_major }}. Supported versions: 8.x and 9.x"
+  when: pve_major | int not in [8, 9]

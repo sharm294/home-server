@@ -1,0 +1,15 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+template_vm_id: 8000
+template_name: debian-13-template
+template_memory: 2048
+template_cores: 2
+template_agent_enable: 1
+template_image_url: https://cloud.debian.org/images/cloud/trixie/latest
+template_image_filename: debian-13-generic-amd64.qcow2
+template_tags: template,debian-template,debian,debian-13
+proxmox_storage: local-lvm
+cloud_user: varunsh
+cloud_password: changeme

@@ -1,0 +1,57 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Configure Debian Bookworm sources (PVE 8.x)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list
+    content: |
+      deb http://deb.debian.org/debian bookworm main contrib
+      deb http://deb.debian.org/debian bookworm-updates main contrib
+      deb http://security.debian.org/debian-security bookworm-security main contrib
+    mode: "0644"
+
+- name: Configure APT to suppress firmware warnings
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/no-bookworm-firmware.conf
+    content: APT::Get::Update::SourceListWarnings::NonFreeFirmware "false";
+    mode: "0644"
+
+- name: Disable pve-enterprise repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/pve-enterprise.list
+    content: |
+      # deb https://enterprise.proxmox.com/debian/pve bookworm pve-enterprise
+    mode: "0644"
+  when: pve_disable_enterprise
+
+- name: Enable pve-no-subscription repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/pve-install-repo.list
+    content: |
+      deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription
+    mode: "0644"
+  when: pve_enable_no_subscription
+
+- name: Configure Ceph package repositories (PVE 8.x)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/ceph.list
+    content: |
+      # deb https://enterprise.proxmox.com/debian/ceph-quincy bookworm enterprise
+      # deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription
+      # deb https://enterprise.proxmox.com/debian/ceph-reef bookworm enterprise
+      # deb http://download.proxmox.com/debian/ceph-reef bookworm no-subscription
+    mode: "0644"
+  when: pve_setup_ceph_repos
+
+- name: Add pvetest repository (disabled)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/pvetest-for-beta.list
+    content: |
+      # deb http://download.proxmox.com/debian/pve bookworm pvetest
+    mode: "0644"
+  when: pve_setup_pvetest
+
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true

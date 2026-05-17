@@ -1,0 +1,111 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Download cloud image
+  ansible.builtin.get_url:
+    url: "{{ template_image_url }}/{{ template_image_filename }}"
+    dest: "/tmp/{{ template_image_filename }}"
+    checksum: "sha512:{{ template_image_url }}/SHA512SUMS"
+    mode: "0600"
+
+- name: Create Proxmox VM for template
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ template_vm_id }}"
+    name: "{{ template_name }}"
+    memory: "{{ template_memory }}"
+    cores: "{{ template_cores }}"
+    sockets: 1
+    cpu: host
+    balloon: "{{ (template_memory * 0.375) | int }}"
+    bios: ovmf
+    machine: q35
+    net:
+      - model: virtio
+        bridge: vmbr0
+    state: present
+
+# - name: Import disk image to VM
+#   community.general.proxmox_disk:
+#     api_host: "{{ proxmox_api_host }}"
+#     api_user: "{{ proxmox_api_user }}"
+#     api_token_id: "{{ proxmox_api_token_id }}"
+#     api_token_secret: "{{ proxmox_api_token_secret }}"
+#     vmid: "{{ template_vm_id }}"
+#     filename: "/tmp/{{ template_image_filename }}"
+#     storage: "{{ proxmox_storage }}"
+#     state: present
+- name: Import disk image to VM
+  ansible.builtin.command: qm importdisk {{ template_vm_id }} /tmp/{{ template_image_filename }} {{ proxmox_storage }}
+
+- name: Ensure Proxmox cloud-init snippets directory exists
+  ansible.builtin.file:
+    path: /var/lib/vz/snippets
+    state: directory
+    mode: "0755"
+
+- name: Install Debian 13 cloud-init vendor snippet
+  ansible.builtin.copy:
+    dest: /var/lib/vz/snippets/debian-13.yaml
+    # Taken from https://forum.proxmox.com/threads/combining-custom-cloud-init-with-auto-generated.59008/page-3#post-428772
+    content: |
+      #cloud-config
+      # for Proxmox, root login is needed
+      disable_root: false
+
+      runcmd:
+      - apt-get update
+      - apt-get install -y qemu-guest-agent
+      - reboot
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure VM settings
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ template_vm_id }}"
+    agent: "{{ template_agent_enable }}"
+    ostype: l26
+    scsihw: virtio-scsi-single
+    efidisk0: "{{ proxmox_storage }}:0,efitype=4m,pre-enrolled-keys=1,size=1M"
+    tags: "{{ template_tags }}"
+    scsi1: "{{ proxmox_storage }}:cloudinit"
+    ciuser: "{{ cloud_user }}"
+    cipassword: "{{ cloud_password }}"
+    boot: c
+    bootdisk: scsi0
+    tablet: 0
+    ipconfig0: ip=dhcp,ip6=dhcp
+    sshkeys: ~/.ssh/authorized_keys
+    cicustom: vendor=local:snippets/debian-13.yaml
+    description: Debian 13 Cloud-Init Template
+    state: present
+    update: true
+    rng0: /dev/urandom
+  args:
+    creates: "/etc/pve/qemu-server/{{ template_vm_id }}.conf"
+
+- name: Update cloud-init configuration
+  ansible.builtin.command: "qm cloudinit update {{ template_vm_id }}"
+
+- name: Convert VM to template
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ template_vm_id }}"
+    template: true
+    state: present
+    update: true

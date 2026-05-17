@@ -1,0 +1,22 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Install required packages
+  ansible.builtin.apt:
+    name: "{{ proxmox_required_packages }}"
+    state: present
+    update_cache: true
+
+- name: Remove os-prober package
+  ansible.builtin.apt:
+    name: os-prober
+    state: absent
+
+- name: Run microcode installation role
+  ansible.builtin.include_role:
+    name: microcode
+
+- name: Run Proxmox VE post-install configuration role
+  ansible.builtin.include_role:
+    name: pve_post_install

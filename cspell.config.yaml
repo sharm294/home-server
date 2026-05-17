@@ -1,45 +1,73 @@
 ---
-version: '0.2'
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+version: "0.2"
 ignorePaths: [cspell.config.yaml]
 language: en
 dictionaryDefinitions: []
 dictionaries: [en_US, softwareTerms]
 words:
+  - adfiles
+  - appledouble
+  - ashift
+  - backrefs
   - bootable
   - bootdisk
+  - bpve
   - cdrom
   - changeme
   - chrony
   - cicustom
   - cipassword
   - ciuser
+  - cloudimage
   - cloudinit
   - codespell
+  - corosync
   - cramfs
   - dmypy
   - EDITMSG
   - efidisk
   - efitype
+  - endfor
   - envrc
   - firewire
   - freevxfs
+  - genericcloud
   - hfsplus
   - htmlcov
   - importdisk
   - iothread
   - iscsi
   - isolinux
+  - iucode
   - jffs
+  - journalctl
+  - keyrings
   - kwargs
+  - lineinfile
+  - listfile
+  - lvmthin
   - metas
+  - mkpasswd
   - mypy
+  - netif
   - netinst
+  - nologin
+  - nullglob
+  - ostemplate
   - ostype
   - ovmf
   - partitioner
+  - pdbedit
+  - pipefail
   - preconfiguration
   - preseed
   - preseeded
+  - proxmoxlib
+  - pveam
+  - pvesm
   - pvetest
   - pveversion
   - pycache
@@ -49,6 +77,10 @@ words:
   - pytest
   - PyYAML
   - qcow
+  - resolv
+  - rfork
+  - rootdir
+  - rootfs
   - runcmd
   - scsihw
   - sdist
@@ -57,55 +89,54 @@ words:
   - Sharma
   - shellcheck
   - sshkeys
+  - thinpool
   - trixie
   - UEFI
   - urandom
   - Varun
   - varunsh
   - venv
+  - vgname
   - virtio
   - vmbr
+  - vmid
+  - vztmpl
+  - wipefs
   - writethrough
-
+  - xattr
+  - yourpassword
+  - zfspool
 ignoreWords: []
 import: []
 languageSettings:
   - languageId: shellscript
-    locale: '*'
+    locale: "*"
     dictionaries: [bash]
     ignoreRegExpList:
       - -\w+
     words:
       - adfiles
       - appledouble
-      - ashift
       - corosync
       - iucode
-      - journalctl
       - listfile
-      - lvmthin
       - nologin
       - nullglob
       - proxmoxlib
       - pveam
-      - pvesm
-      - resolv
       - rfork
-      - rootdir
-      - thinpool
       - vztmpl
-      - wipefs
       - xattr
       - yourpassword
       - zfspool
   - languageId: python
-    locale: '*'
+    locale: "*"
     dictionaries: [python]
   - languageId: c,cpp
-    locale: '*'
+    locale: "*"
     dictionaries: [cpp]
   - languageId: properties
-    locale: '*'
+    locale: "*"
     dictionaries: [cpp]
     words:
       - ALSA

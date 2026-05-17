@@ -1,0 +1,9 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+# Proxmox VE post-install configuration settings
+pve_enable_no_subscription: true
+pve_disable_enterprise: true
+pve_setup_ceph_repos: true
+pve_setup_pvetest: false

@@ -1,0 +1,8 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+lvm_drive: /dev/disk/by-id/ata-EXAMPLE
+lvm_vg_name: vm
+lvm_thinpool_name: vm-thin
+lvm_storage_id: local-lvm

@@ -1,0 +1,27 @@
+---
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Ansible playbook to configure Proxmox host and create Debian 13 template and VM
+# Now organized using roles for better maintainability and reusability
+
+- name: Configure Proxmox Host
+  hosts: proxmox_host
+  become: true
+  vars:
+  # Proxmox API connection
+    proxmox_api_host: "{{ lookup('env', 'PROXMOX_API_HOST') | default('localhost', true) }}"
+    proxmox_api_user: "{{ lookup('env', 'PROXMOX_API_USER') | default('root@pam', true) }}"
+    proxmox_api_token_id: "{{ lookup('env', 'PROXMOX_API_TOKEN_ID') | default(omit, true) }}"
+    proxmox_api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') | default(omit, true) }}"
+    proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve', true) }}"
+
+  roles:
+    - proxmox_setup
+    - networking
+    - debian_template
+    - vm_instance
+    - storage_lvm
+    - storage_zfs
+    - nas
+    - samba

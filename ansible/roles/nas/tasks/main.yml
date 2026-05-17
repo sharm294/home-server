@@ -1,0 +1,70 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Create NAS users group
+  ansible.builtin.group:
+    name: "{{ lxc_nas_group }}"
+    gid: "{{ lxc_nas_gid }}"
+    state: present
+
+- name: Create NAS admin user
+  ansible.builtin.user:
+    name: "{{ lxc_nas_user }}"
+    uid: "{{ lxc_nas_uid }}"
+    group: "{{ lxc_nas_group }}"
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Set ownership for media_root mount
+  ansible.builtin.file:
+    path: "/{{ zfs_pool_name }}/media_root"
+    owner: "{{ lxc_nas_user }}"
+    group: "{{ lxc_nas_group }}"
+    recurse: true
+    state: directory
+
+- name: Set ownership for NAS mount
+  ansible.builtin.file:
+    path: "/{{ zfs_pool_name }}/nas"
+    owner: "{{ lxc_nas_user }}"
+    group: "{{ lxc_nas_group }}"
+    recurse: true
+    state: directory
+
+- name: Download Debian 13 LXC template
+  community.proxmox.proxmox_template:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    # name: "{{ lxc_template_name }}"
+    storage: "{{ lxc_template_url }}"
+    state: present
+
+- name: Create LXC container
+  community.proxmox.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ lxc_container_id }}"
+    ostemplate: "{{ lxc_template_url }}:vztmpl/{{ lxc_template_name }}"
+    password: "{{ lxc_container_password }}"
+    disk_volume:
+      storage: local-lvm
+      size: 8
+    netif:
+      net0: "name=eth0,ip=dhcp,ip6=dhcp,bridge=vmbr0"
+    cores: "{{ lxc_container_cores }}"
+    memory: "{{ lxc_container_memory }}"
+    features:
+      nesting: 1
+    mounts:
+      mp0: /{{ zfs_pool_name }}/nas,mp=/mnt/nas
+      mp1: /{{ zfs_pool_name }}/media_root,mp=/mnt/media_root
+    pubkey: ~/.ssh/authorized_keys
+    state: present
+    start: true

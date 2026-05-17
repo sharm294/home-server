@@ -1,0 +1,47 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Check PVE host
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: pve_host.yml
+
+- name: Get CPU vendor information
+  ansible.builtin.command: lscpu | grep -oP 'Vendor ID:\s*\K\S+' | head -n 1
+  register: cpu_vendor_result
+  changed_when: false
+
+- name: Set CPU vendor fact
+  ansible.builtin.set_fact:
+    cpu_vendor: "{{ cpu_vendor_result.stdout }}"
+
+- name: Get current microcode revision from kernel logs
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      journalctl -k | grep -i 'microcode: Current revision:' | grep -oP 'Current revision: \\K0x[0-9a-f]+' | tail -n 1
+  register: current_microcode
+  failed_when: false
+  changed_when: false
+
+- name: Install Intel microcode
+  ansible.builtin.include_tasks: intel_microcode.yml
+  when:
+    - cpu_vendor == "GenuineIntel"
+    - microcode_install_intel
+
+- name: Install AMD microcode
+  ansible.builtin.include_tasks: amd_microcode.yml
+  when:
+    - cpu_vendor == "AuthenticAMD"
+    - microcode_install_amd
+
+- name: Fail if CPU vendor is not supported
+  ansible.builtin.fail:
+    msg: "CPU vendor '{{ cpu_vendor }}' is not supported for microcode installation"
+  when: cpu_vendor not in ["GenuineIntel", "AuthenticAMD"]
+
+- name: Display reboot notification
+  ansible.builtin.debug:
+    msg: Microcode installation complete. A system reboot is necessary to apply the changes.

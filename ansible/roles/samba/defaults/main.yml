@@ -1,0 +1,28 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+# Defaults for samba role
+samba_user: nas_admin
+samba_group: nas_users
+samba_password: changeme
+samba_group_gid: 10000
+samba_user_uid: 1000
+samba_user_shell: /usr/sbin/nologin
+samba_packages:
+  - samba
+  - acl
+samba_shares:
+  - name: nas
+    path: /mnt/nas
+    comment: NAS Share
+    create_mask: "0664"
+    directory_mask: "0775"
+    mode: "0775"
+  - name: media
+    path: /mnt/media_root
+    comment: Media Share
+    create_mask: "0664"
+    directory_mask: "0775"
+    mode: "0775"
+samba_workgroup: WORKGROUP

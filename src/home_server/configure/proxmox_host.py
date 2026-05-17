@@ -9,7 +9,7 @@ This file defines how to configure the Proxmox host after installation.
 
 from pyinfra.api import State
 from pyinfra.api.operation import add_op
-from pyinfra.operations import apt, server
+from pyinfra.operations import apt, files, server
 
 from home_server.operations import qm
 
@@ -73,11 +73,7 @@ def create_debian_13_template(  # noqa: PLR0913
 
     # Step 1: Download the cloud image
     image_path = f"/tmp/{image_filename}"  # noqa: S108
-    add_op(
-        state,
-        server.shell,
-        [f"wget -q -O {image_path} {image_url}/{image_filename} || true"],
-    )
+    add_op(state, files.download, f"{image_url}/{image_filename}", image_path)
 
     # Step 2: Create the template VM
     add_op(

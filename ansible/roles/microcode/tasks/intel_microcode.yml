@@ -1,0 +1,69 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Install iucode-tool if not already installed
+  ansible.builtin.apt:
+    name: iucode-tool
+    state: present
+  register: iucode_install_result
+- name: Display iucode-tool installation status
+  ansible.builtin.debug:
+    msg: "{{ 'Installed iucode-tool' if iucode_install_result.changed else 'iucode-tool is already installed' }}"
+
+- name: Create microcode cache directory
+  ansible.builtin.file:
+    path: "{{ microcode_cache_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Get list of available Intel microcode packages
+  ansible.builtin.get_url:
+    url: "https://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode//"
+    dest: "{{ microcode_cache_dir }}/intel_index.html"
+    mode: "0644"
+  register: intel_index_download
+  failed_when: false
+  changed_when: false
+
+- name: Get list of available Intel microcode packages
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      grep -o 'href="[^\"]*amd64.deb"' "{{ microcode_cache_dir }}/intel_index.html" | sed 's/href="//;s/"//' | sort
+  register: intel_microcode_list
+  failed_when: false
+  changed_when: false
+
+- name: Display available Intel microcode packages
+  ansible.builtin.debug:
+    msg: "Available Intel microcode packages: {{ intel_microcode_list.stdout_lines }}"
+
+- name: Install Intel microcode (latest available)
+  block:
+    - name: Get the latest Intel microcode package
+      ansible.builtin.set_fact:
+        intel_microcode_package: "{{ intel_microcode_list.stdout_lines[-1] if intel_microcode_list.stdout_lines else '' }}"
+
+    - name: Fail if no Intel microcode packages found
+      ansible.builtin.fail:
+        msg: No Intel microcode packages found
+      when: intel_microcode_package == ""
+
+    - name: Download Intel microcode package
+      ansible.builtin.get_url:
+        url: "http://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode/{{ intel_microcode_package }}"
+        dest: "{{ microcode_cache_dir }}/{{ intel_microcode_package }}"
+        mode: "0644"
+      register: download_result
+
+    - name: Install Intel microcode package
+      ansible.builtin.apt:
+        deb: "{{ microcode_cache_dir }}/{{ intel_microcode_package }}"
+        state: present
+
+    - name: Clean up microcode package
+      ansible.builtin.file:
+        path: "{{ microcode_cache_dir }}/{{ intel_microcode_package }}"
+        state: absent
+      when: intel_microcode_list.stdout_lines | length > 0

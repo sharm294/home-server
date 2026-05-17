@@ -1,0 +1,38 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Wipe target drive
+  ansible.builtin.shell: |
+    if wipefs --no-act {{ lvm_drive }} | grep -q .; then
+      wipefs -a {{ lvm_drive }}
+      echo "__wipefs_changed__"
+    fi
+  register: wipe_result
+  changed_when: "'__wipefs_changed__' in wipe_result.stdout"
+  args:
+    warn: false
+
+- name: Create LVM physical volume
+  ansible.builtin.command: pvcreate {{ lvm_drive }}
+  register: pv_result
+  failed_when: pv_result.rc not in [0, 5]
+  changed_when: pv_result.rc == 0
+
+- name: Create LVM volume group
+  ansible.builtin.command: vgcreate {{ lvm_vg_name }} {{ lvm_drive }}
+  register: vg_result
+  failed_when: vg_result.rc not in [0, 5]
+  changed_when: vg_result.rc == 0
+
+- name: Create LVM thin pool
+  ansible.builtin.command: lvcreate -l 100%FREE --thinpool {{ lvm_thinpool_name }} {{ lvm_vg_name }}
+  register: lv_result
+  failed_when: lv_result.rc not in [0, 5]
+  changed_when: lv_result.rc == 0
+
+- name: Add LVM thin pool to Proxmox storage
+  ansible.builtin.command: pvesm add lvmthin {{ lvm_storage_id }} --vgname {{ lvm_vg_name }} --thinpool {{ lvm_thinpool_name }} --content images,rootdir
+  register: storage_result
+  failed_when: storage_result.rc not in [0, 256]
+  changed_when: storage_result.rc == 0

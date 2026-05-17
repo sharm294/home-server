@@ -1,0 +1,14 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Check if Proxmox VE is installed
+  ansible.builtin.command: which pveversion
+  register: pveversion_check
+  failed_when: false
+  changed_when: false
+
+- name: Exit if Proxmox VE is not detected
+  ansible.builtin.fail:
+    msg: No PVE Detected!
+  when: pveversion_check.rc != 0

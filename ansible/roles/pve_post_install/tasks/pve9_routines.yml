@@ -1,0 +1,184 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Check for existing deb822 sources
+  ansible.builtin.find:
+    paths: /etc/apt/sources.list.d
+    patterns: "*.sources"
+    file_type: file
+  register: deb822_sources
+
+- name: Migrate to deb822 sources format (PVE 9.x)
+  block:
+    - name: Backup and disable legacy sources.list
+      ansible.builtin.shell: |
+        if grep -qE '^\s*deb ' /etc/apt/sources.list 2>/dev/null; then
+          cp /etc/apt/sources.list /etc/apt/sources.list.bak
+          sed -i '/^\s*deb /s/^/# Disabled by Proxmox Helper Script /' /etc/apt/sources.list
+        fi
+      changed_when: false
+
+    - name: Find and backup legacy .list files
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*.list"
+        file_type: file
+      register: legacy_list_files
+
+    - name: Rename legacy .list files to .bak
+      ansible.builtin.shell: |
+        for f in {{ legacy_list_files.files | map(attribute='path') | join(' ') }}; do
+          mv "$f" "$f.bak"
+        done
+      when: legacy_list_files.matched > 0
+      changed_when: false
+
+- name: Remove bookworm and proxmox entries from sources.list
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list
+    state: absent
+    regexp: (proxmox|bookworm)
+
+- name: Create deb822 debian sources
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/debian.sources
+    content: |
+      Types: deb
+      URIs: http://deb.debian.org/debian
+      Suites: trixie
+      Components: main contrib
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+      Types: deb
+      URIs: http://security.debian.org/debian-security
+      Suites: trixie-security
+      Components: main contrib
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+      Types: deb
+      URIs: http://deb.debian.org/debian
+      Suites: trixie-updates
+      Components: main contrib
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+    mode: "0644"
+  when: deb822_sources.matched == 0
+
+- name: Manage pve-enterprise component
+  when: pve_disable_enterprise
+
+  block:
+    - name: Find PVE source files
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*.sources"
+        file_type: file
+      register: pve_source_files
+
+    - name: Read PVE source file contents
+      ansible.builtin.slurp:
+        src: "{{ item.path }}"
+      loop: "{{ pve_source_files.files }}"
+      register: pve_source_contents
+      when: pve_source_files.matched > 0
+
+    - name: Check if pve-enterprise component exists in sources
+      ansible.builtin.set_fact:
+        pve_enterprise_check: >-
+          {{ "exists" if (
+            pve_source_contents.results | default([]) |
+            map(attribute="content") |
+            map("b64decode") |
+            select("search", "(?m)^[^#]*Components:[^#]*\\bpve-enterprise\\b") |
+            list | length) > 0 else "notfound" }}
+
+    - name: Disable pve-enterprise component
+      ansible.builtin.debug:
+        msg: pve-enterprise component handling (currently disabled in tasks, can be enabled via user interaction)
+        when: pve_enterprise_check == "exists"
+- name: Manage pve-no-subscription component
+  when: pve_enable_no_subscription
+
+  block:
+    - name: Find PVE source files for no-subscription check
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*.sources"
+        file_type: file
+      register: pve_source_files_no
+
+    - name: Read PVE source file contents for no-subscription check
+      ansible.builtin.slurp:
+        src: "{{ item.path }}"
+      loop: "{{ pve_source_files_no.files }}"
+      register: pve_source_contents_no
+      when: pve_source_files_no.matched > 0
+
+    - name: Check if pve-no-subscription component exists in sources
+      ansible.builtin.set_fact:
+        pve_no_subscription_check: >-
+          {{ "exists" if (
+            pve_source_contents_no.results | default([]) |
+            map(attribute="content") |
+            map("b64decode") |
+            select("search", "(?m)^[^#]*Components:[^#]*\\bpve-no-subscription\\b") |
+            list | length) > 0 else "notfound" }}
+
+    - name: Enable pve-no-subscription repository for PVE 9
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/pve-no-subscription.sources
+        content: |
+          Types: deb
+          URIs: http://download.proxmox.com/debian/pve
+          Suites: trixie
+          Components: pve-no-subscription
+          Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
+        mode: "0644"
+      when: pve_no_subscription_check == "notfound"
+- name: Setup Ceph repositories for PVE 9
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/ceph-quincy-and-reef.sources
+    content: |
+      # Ceph Quincy repositories (disabled)
+      # Types: deb
+      # URIs: https://enterprise.proxmox.com/debian/ceph-quincy
+      # Suites: trixie
+      # Components: enterprise
+      # Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
+
+      # Types: deb
+      # URIs: http://download.proxmox.com/debian/ceph-quincy
+      # Suites: trixie
+      # Components: no-subscription
+      # Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
+
+      # Ceph Reef repositories (disabled)
+      # Types: deb
+      # URIs: https://enterprise.proxmox.com/debian/ceph-reef
+      # Suites: trixie
+      # Components: enterprise
+      # Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
+
+      # Types: deb
+      # URIs: http://download.proxmox.com/debian/ceph-reef
+      # Suites: trixie
+      # Components: no-subscription
+      # Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
+    mode: "0644"
+  when: pve_setup_ceph_repos
+
+- name: Add pvetest repository (disabled)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/pvetest-for-beta.sources
+    content: |
+      # Types: deb
+      # URIs: http://download.proxmox.com/debian/pve
+      # Suites: trixie
+      # Components: pvetest
+      # Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
+    mode: "0644"
+  when: pve_setup_pvetest
+
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true
