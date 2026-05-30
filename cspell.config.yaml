@@ -37,6 +37,7 @@ words:
   - genericcloud
   - hfsplus
   - htmlcov
+  - iface
   - importdisk
   - iothread
   - iscsi

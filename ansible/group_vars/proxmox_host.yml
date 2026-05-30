@@ -1,0 +1,37 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+# ---------------------------------------------------------------------------
+# Proxmox API connection
+# These are consumed by both the host-side play (via include_role facts) and
+# the API play (debian_template, vm_instance, nas container tasks).
+# Secrets are read from environment variables; set them in your shell or CI
+# before running the playbook.
+# ---------------------------------------------------------------------------
+proxmox_api_host: "{{ lookup('env', 'PROXMOX_API_HOST') | default('localhost', true) }}"
+proxmox_api_user: "{{ lookup('env', 'PROXMOX_API_USER') | default('root@pam', true) }}"
+proxmox_api_token_id: "{{ lookup('env', 'PROXMOX_API_TOKEN_ID') }}"
+proxmox_api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') }}"
+proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve', true) }}"
+
+# ---------------------------------------------------------------------------
+# Networking
+# Override in host_vars/<hostname>.yml if nodes differ.
+# ---------------------------------------------------------------------------
+default_gateway: 192.168.0.1
+search_domain: home.arpa
+
+# ---------------------------------------------------------------------------
+# Storage IDs
+# Override in host_vars/<hostname>.yml for non-standard storage layouts.
+# ---------------------------------------------------------------------------
+proxmox_storage: local-lvm
+
+lvm_drive: /dev/disk/by-id/ata-EXAMPLE
+lvm_vg_name: vm
+lvm_thinpool_name: vm-thin
+lvm_storage_id: local-lvm
+
+zfs_drive_1: /dev/disk/by-id/ata-EXAMPLE1
+zfs_drive_2: /dev/disk/by-id/ata-EXAMPLE2

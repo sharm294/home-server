@@ -2,6 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-zfs_pool_name: storage
+# zfs_pool_name is defined in group_vars/all.yml.
+# Drive paths are defined in group_vars/proxmox_host.yml and should be
+# overridden per-host in host_vars/<hostname>.yml.
+#
+# These placeholder values cause an intentional failure if not overridden,
+# preventing accidental writes to the wrong device.
 zfs_drive_1: /dev/disk/by-id/ata-EXAMPLE1
 zfs_drive_2: /dev/disk/by-id/ata-EXAMPLE2

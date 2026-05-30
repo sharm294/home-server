@@ -1,0 +1,38 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+# These tasks run directly on the Proxmox host over SSH (become: true).
+# They prepare the ZFS dataset mount points with the correct ownership
+# before the LXC container bind-mounts them.
+
+- name: Create NAS users group
+  ansible.builtin.group:
+    name: "{{ nas_group }}"
+    gid: "{{ nas_gid }}"
+    state: present
+
+- name: Create NAS admin user
+  ansible.builtin.user:
+    name: "{{ nas_user }}"
+    uid: "{{ nas_uid }}"
+    group: "{{ nas_group }}"
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Set ownership for media_root mount
+  ansible.builtin.file:
+    path: "/{{ zfs_pool_name }}/media_root"
+    owner: "{{ nas_user }}"
+    group: "{{ nas_group }}"
+    recurse: true
+    state: directory
+
+- name: Set ownership for NAS mount
+  ansible.builtin.file:
+    path: "/{{ zfs_pool_name }}/nas"
+    owner: "{{ nas_user }}"
+    group: "{{ nas_group }}"
+    recurse: true
+    state: directory

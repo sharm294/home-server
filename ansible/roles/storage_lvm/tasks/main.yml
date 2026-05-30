@@ -2,37 +2,64 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
+- name: Check if drive has existing signatures
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      wipefs --no-act {{ lvm_drive }} | grep -q . && echo "__has_signatures__" || true
+  register: wipefs_check
+  changed_when: false
+
 - name: Wipe target drive
-  ansible.builtin.shell: |
-    if wipefs --no-act {{ lvm_drive }} | grep -q .; then
-      wipefs -a {{ lvm_drive }}
-      echo "__wipefs_changed__"
-    fi
-  register: wipe_result
-  changed_when: "'__wipefs_changed__' in wipe_result.stdout"
-  args:
-    warn: false
+  ansible.builtin.command: wipefs -a {{ lvm_drive }}
+  when: "'__has_signatures__' in wipefs_check.stdout"
+  changed_when: true
+
+- name: Check if LVM physical volume exists
+  ansible.builtin.command: pvs {{ lvm_drive }}
+  register: pv_check
+  failed_when: false
+  changed_when: false
 
 - name: Create LVM physical volume
   ansible.builtin.command: pvcreate {{ lvm_drive }}
-  register: pv_result
-  failed_when: pv_result.rc not in [0, 5]
-  changed_when: pv_result.rc == 0
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Check if LVM volume group exists
+  ansible.builtin.command: vgs {{ lvm_vg_name }}
+  register: vg_check
+  failed_when: false
+  changed_when: false
 
 - name: Create LVM volume group
   ansible.builtin.command: vgcreate {{ lvm_vg_name }} {{ lvm_drive }}
-  register: vg_result
-  failed_when: vg_result.rc not in [0, 5]
-  changed_when: vg_result.rc == 0
+  when: vg_check.rc != 0
+  changed_when: true
+
+- name: Check if LVM thin pool exists
+  ansible.builtin.command: lvs {{ lvm_vg_name }}/{{ lvm_thinpool_name }}
+  register: lv_check
+  failed_when: false
+  changed_when: false
 
 - name: Create LVM thin pool
-  ansible.builtin.command: lvcreate -l 100%FREE --thinpool {{ lvm_thinpool_name }} {{ lvm_vg_name }}
-  register: lv_result
-  failed_when: lv_result.rc not in [0, 5]
-  changed_when: lv_result.rc == 0
+  ansible.builtin.command: >
+    lvcreate -l 100%FREE --thinpool {{ lvm_thinpool_name }} {{ lvm_vg_name }}
+  when: lv_check.rc != 0
+  changed_when: true
+
+- name: Check if Proxmox storage entry exists
+  ansible.builtin.command: pvesm status --storage {{ lvm_storage_id }}
+  register: storage_check
+  failed_when: false
+  changed_when: false
 
 - name: Add LVM thin pool to Proxmox storage
-  ansible.builtin.command: pvesm add lvmthin {{ lvm_storage_id }} --vgname {{ lvm_vg_name }} --thinpool {{ lvm_thinpool_name }} --content images,rootdir
-  register: storage_result
-  failed_when: storage_result.rc not in [0, 256]
-  changed_when: storage_result.rc == 0
+  ansible.builtin.command: >
+    pvesm add lvmthin {{ lvm_storage_id }}
+    --vgname {{ lvm_vg_name }}
+    --thinpool {{ lvm_thinpool_name }}
+    --content images,rootdir
+  when: storage_check.rc != 0
+  changed_when: true

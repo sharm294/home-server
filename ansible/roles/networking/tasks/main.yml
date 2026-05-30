@@ -1,78 +1,97 @@
----
 # Copyright (c) 2026 sharm294
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+---
 - name: Check if vmbr0 bridge already exists
   ansible.builtin.command: ip link show vmbr0 type bridge
   register: bridge_check
   failed_when: false
   changed_when: false
 
-- name: Configure Proxmox VE networking
+- name: Get IP address from active route
+  ansible.builtin.command: ip route get 1.2.3.4
+  register: route_output
+  changed_when: false
+
+- name: Extract IP address
+  ansible.builtin.set_fact:
+    ip_addr: "{{ route_output.stdout_lines[0].split()[6] }}"
+
+- name: Get first non-loopback network interface
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      ip -o link show | awk -F': ' '$2 != "lo" {print $2; exit}'
+  register: nic_output
+  changed_when: false
+
+- name: Set NIC variable
+  ansible.builtin.set_fact:
+    nic: "{{ nic_output.stdout }}"
+
+# Write persistent config regardless of whether the bridge already exists,
+# so re-runs are always idempotent and the config is authoritative.
+- name: Deploy persistent network configuration
+  ansible.builtin.template:
+    src: interfaces.j2
+    dest: /etc/network/interfaces
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload networking
+
+- name: Configure live bridge (skipped if vmbr0 already exists)
   when: bridge_check.rc != 0
   block:
-    - name: Get IP address from active route
-      ansible.builtin.command: ip route get 1.2.3.4
-      register: route_output
-      changed_when: false
-
-    - name: Extract IP address
-      ansible.builtin.set_fact:
-        ip_addr: "{{ route_output.stdout_lines[0].split()[6] }}"
-
-    - name: Get first non-loopback network interface
-      ansible.builtin.command:
-        cmd: "ip -o link show | awk -F': ' '$2 != \"lo\" {print $2; exit}'"
-      register: nic_output
-      changed_when: false
-
-    - name: Set NIC variable
-      ansible.builtin.set_fact:
-        nic: "{{ nic_output.stdout }}"
-
     - name: Create vmbr0 bridge
       ansible.builtin.command: ip link add name vmbr0 type bridge
-      args:
-        creates: /sys/class/net/vmbr0
+      changed_when: true
 
     - name: Set vmbr0 bridge parameters
       ansible.builtin.command: "{{ item }}"
       loop:
         - ip link set vmbr0 forward_delay 0
         - ip link set vmbr0 stp_state 0
+      changed_when: true
 
     - name: Bring vmbr0 up
       ansible.builtin.command: ip link set vmbr0 up
+      changed_when: true
 
     - name: Flush IP from physical interface
       ansible.builtin.command: "ip addr flush dev {{ nic }}"
+      changed_when: true
 
     - name: Add physical interface to bridge
       ansible.builtin.command: "{{ item }}"
       loop:
         - ip link set {{ nic }} master vmbr0
         - ip link set {{ nic }} up
+      changed_when: true
 
     - name: Assign IP to bridge
       ansible.builtin.command: "ip addr add {{ ip_addr }}/24 dev vmbr0"
+      changed_when: true
 
     - name: Set default route
-      ansible.builtin.command: "ip route add default via {{ default_gateway }}"
+      ansible.builtin.command: "ip route replace default via {{ default_gateway }}"
+      changed_when: true
 
-    - name: Update resolv.conf
-      ansible.builtin.lineinfile:
-        path: /etc/resolv.conf
-        line: "search {{ search_domain }}"
-        state: present
+- name: Update resolv.conf
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    line: "search {{ search_domain }}"
+    state: present
 
-    - name: Update hostname resolution in /etc/hosts
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: "^(127\\.0\\.1\\.1)(\\s+.*)$"
-        line: "{{ ip_addr }}\\2"
-        backrefs: true
+- name: Update hostname resolution in /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^(127\\.0\\.1\\.1)(\\s+.*)$"
+    line: "{{ ip_addr }}\\2"
+    backrefs: true
 
-    - name: Restart pve-cluster service
-      ansible.builtin.systemd:
-        name: pve-cluster
-        state: restarted
+- name: Restart pve-cluster service
+  ansible.builtin.systemd:
+    name: pve-cluster
+    state: restarted
+  when: bridge_check.rc != 0

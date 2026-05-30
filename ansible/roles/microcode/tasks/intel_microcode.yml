@@ -7,6 +7,7 @@
     name: iucode-tool
     state: present
   register: iucode_install_result
+
 - name: Display iucode-tool installation status
   ansible.builtin.debug:
     msg: "{{ 'Installed iucode-tool' if iucode_install_result.changed else 'iucode-tool is already installed' }}"
@@ -17,11 +18,12 @@
     state: directory
     mode: "0755"
 
-- name: Get list of available Intel microcode packages
+- name: Download Intel microcode package index
   ansible.builtin.get_url:
-    url: "https://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode//"
+    url: "https://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode/"
     dest: "{{ microcode_cache_dir }}/intel_index.html"
     mode: "0644"
+    force: true
   register: intel_index_download
   failed_when: false
   changed_when: false
@@ -30,7 +32,7 @@
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      grep -o 'href="[^\"]*amd64.deb"' "{{ microcode_cache_dir }}/intel_index.html" | sed 's/href="//;s/"//' | sort
+      grep -o 'href="[^"]*amd64.deb"' "{{ microcode_cache_dir }}/intel_index.html" | sed 's/href="//;s/"//' | sort
   register: intel_microcode_list
   failed_when: false
   changed_when: false

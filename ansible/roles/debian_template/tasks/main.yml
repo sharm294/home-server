@@ -1,15 +1,35 @@
+---
 # Copyright (c) 2026 sharm294
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
----
+- name: Download cloud image checksum file
+  ansible.builtin.get_url:
+    url: "{{ template_image_url }}/SHA512SUMS"
+    dest: "/tmp/{{ template_image_filename }}.SHA512SUMS"
+    mode: "0600"
+    force: true
+
+- name: Extract expected checksum for cloud image
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      grep -E '\s+{{ template_image_filename }}$' /tmp/{{ template_image_filename }}.SHA512SUMS | awk '{print $1}'
+  register: image_checksum
+  changed_when: false
+
+- name: Fail if checksum could not be extracted
+  ansible.builtin.fail:
+    msg: "Could not find checksum for {{ template_image_filename }} in SHA512SUMS"
+  when: image_checksum.stdout | length == 0
+
 - name: Download cloud image
   ansible.builtin.get_url:
     url: "{{ template_image_url }}/{{ template_image_filename }}"
     dest: "/tmp/{{ template_image_filename }}"
-    checksum: "sha512:{{ template_image_url }}/SHA512SUMS"
+    checksum: "sha512:{{ image_checksum.stdout }}"
     mode: "0600"
 
-- name: Create Proxmox VM for template
+- name: Create VM for template
   community.general.proxmox_kvm:
     api_host: "{{ proxmox_api_host }}"
     api_user: "{{ proxmox_api_user }}"
@@ -26,22 +46,53 @@
     bios: ovmf
     machine: q35
     net:
-      - model: virtio
-        bridge: vmbr0
+      net0: "virtio,bridge=vmbr0"
+    ostype: l26
+    agent: true
+    # serial:
+    #   serial0: socket
+    # vga: serial0
+    scsihw: virtio-scsi-single
+    boot: "order=scsi0"
+    tags: "{{ template_tags }}"
+    tablet: false
+    rng0: /dev/urandom
+    ide:
+      ide2: "{{ proxmox_storage }}:cloudinit"
     state: present
 
-# - name: Import disk image to VM
-#   community.general.proxmox_disk:
-#     api_host: "{{ proxmox_api_host }}"
-#     api_user: "{{ proxmox_api_user }}"
-#     api_token_id: "{{ proxmox_api_token_id }}"
-#     api_token_secret: "{{ proxmox_api_token_secret }}"
-#     vmid: "{{ template_vm_id }}"
-#     filename: "/tmp/{{ template_image_filename }}"
-#     storage: "{{ proxmox_storage }}"
-#     state: present
-- name: Import disk image to VM
-  ansible.builtin.command: qm importdisk {{ template_vm_id }} /tmp/{{ template_image_filename }} {{ proxmox_storage }}
+- name: Check if disk is already imported into VM
+  ansible.builtin.command: qm config {{ template_vm_id }}
+  register: vm_config
+  changed_when: false
+
+- name: Import cloud image disk into VM
+  ansible.builtin.command:
+    cmd: >
+      qm importdisk {{ template_vm_id }}
+      {{ image_download_path }}/{{ template_image_filename }}
+      {{ proxmox_storage }}
+      --format {{ disk_format | default('qcow2') }}
+    creates: "/var/lib/vz/images/{{ template_vm_id }}/vm-{{ template_vm_id }}-disk-0.{{ disk_format | default('qcow2') }}"
+  when: "'scsi0' not in vm_config.stdout"
+
+- name: Attach imported disk as scsi0
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ template_vm_id }}"
+    scsi:
+      scsi0: "{{ proxmox_storage }}:vm-{{ template_vm_id }}-disk-0{{ scsi0_options }}"
+    efidisk0:
+      storage: "{{ proxmox_storage }}"
+      format: raw
+      efitype: 4m
+      pre_enrolled_keys: 1
+    state: present
+    update: true
 
 - name: Ensure Proxmox cloud-init snippets directory exists
   ansible.builtin.file:
@@ -66,7 +117,7 @@
     group: root
     mode: "0644"
 
-- name: Configure VM settings
+- name: Configure cloud-init settings
   community.general.proxmox_kvm:
     api_host: "{{ proxmox_api_host }}"
     api_user: "{{ proxmox_api_user }}"
@@ -74,29 +125,30 @@
     api_token_secret: "{{ proxmox_api_token_secret }}"
     node: "{{ proxmox_node }}"
     vmid: "{{ template_vm_id }}"
-    agent: "{{ template_agent_enable }}"
-    ostype: l26
-    scsihw: virtio-scsi-single
-    efidisk0: "{{ proxmox_storage }}:0,efitype=4m,pre-enrolled-keys=1,size=1M"
-    tags: "{{ template_tags }}"
+    # agent: "{{ template_agent_enable }}"
+    # ostype: l26
+    # scsihw: virtio-scsi-single
+    # efidisk0: "{{ proxmox_storage }}:0,efitype=4m,pre-enrolled-keys=1,size=1M"
+    # tags: "{{ template_tags }}"
     scsi1: "{{ proxmox_storage }}:cloudinit"
     ciuser: "{{ cloud_user }}"
     cipassword: "{{ cloud_password }}"
-    boot: c
-    bootdisk: scsi0
-    tablet: 0
-    ipconfig0: ip=dhcp,ip6=dhcp
+    # boot: c
+    # bootdisk: scsi0
+    # tablet: 0
+    ipconfig:
+      ipconfig0: ip=dhcp,ip6=dhcp
     sshkeys: ~/.ssh/authorized_keys
     cicustom: vendor=local:snippets/debian-13.yaml
     description: Debian 13 Cloud-Init Template
     state: present
     update: true
-    rng0: /dev/urandom
   args:
     creates: "/etc/pve/qemu-server/{{ template_vm_id }}.conf"
 
 - name: Update cloud-init configuration
   ansible.builtin.command: "qm cloudinit update {{ template_vm_id }}"
+  changed_when: false
 
 - name: Convert VM to template
   community.general.proxmox_kvm:

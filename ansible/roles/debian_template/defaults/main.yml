@@ -13,3 +13,5 @@ template_tags: template,debian-template,debian,debian-13
 proxmox_storage: local-lvm
 cloud_user: varunsh
 cloud_password: changeme
+image_download_path: /tmp
+scsi0_options: ",cache=writethrough,iothread=1,ssd=1,discard=on"

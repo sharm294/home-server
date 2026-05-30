@@ -2,6 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
+# Drive path and storage IDs are defined in group_vars/proxmox_host.yml and
+# should be overridden per-host in host_vars/<hostname>.yml.
+#
+# These placeholder values cause an intentional failure if not overridden,
+# preventing accidental writes to the wrong device.
 lvm_drive: /dev/disk/by-id/ata-EXAMPLE
 lvm_vg_name: vm
 lvm_thinpool_name: vm-thin

@@ -28,20 +28,24 @@
     state: present
 
 - name: Check if samba user exists in Samba password database
-  ansible.builtin.shell: |
-    set -o pipefail
-    "pdbedit -L | cut -d: -f1 | grep -x {{ samba_user }}"
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      pdbedit -L | cut -d: -f1 | grep -x {{ samba_user }}
   register: pdbedit_check
   failed_when: false
   changed_when: false
 
-- name: Add samba user password if missing
-  ansible.builtin.shell: |
-    set -o pipefail
-    "printf '%s\n%s\n' '{{ samba_password }}' '{{ samba_password }}' | smbpasswd -s -a '{{ samba_user }}'"
-  when: pdbedit_check.rc != 0
-  args:
-    warn: false
+- name: Set samba user password
+  # smbpasswd -s -a adds the user if absent or updates the password if present.
+  # There is no way to verify the current Samba password programmatically, so
+  # this task always runs and always reports changed.
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      printf '%s\n%s\n' '{{ samba_password }}' '{{ samba_password }}' | smbpasswd -s -a '{{ samba_user }}'
+  changed_when: true
+  no_log: true
 
 - name: Create share directories with correct ownership and permissions
   ansible.builtin.file:

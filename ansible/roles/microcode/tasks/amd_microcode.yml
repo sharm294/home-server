@@ -10,9 +10,10 @@
 
 - name: Download AMD microcode package index
   ansible.builtin.get_url:
-    url: "https://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode///"
+    url: "https://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode/"
     dest: "{{ microcode_cache_dir }}/amd64-microcode-index.html"
     mode: "0644"
+    force: true
   register: amd_microcode_index
   failed_when: false
   changed_when: false

@@ -2,12 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-# Defaults for samba role
-samba_user: nas_admin
-samba_group: nas_users
+# The samba share user and group must match the NAS user/group so that
+# ownership on the ZFS datasets is consistent. Reference the shared vars
+# from group_vars/all.yml rather than duplicating values here.
+samba_user: "{{ nas_user }}"
+samba_group: "{{ nas_group }}"
+samba_user_uid: "{{ nas_uid }}"
+samba_group_gid: "{{ nas_gid }}"
+
 samba_password: changeme
-samba_group_gid: 10000
-samba_user_uid: 1000
 samba_user_shell: /usr/sbin/nologin
 samba_packages:
   - samba

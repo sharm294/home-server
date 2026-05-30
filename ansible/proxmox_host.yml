@@ -2,26 +2,43 @@
 # Copyright (c) 2026 sharm294
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Ansible playbook to configure Proxmox host and create Debian 13 template and VM
-# Now organized using roles for better maintainability and reusability
-
-- name: Configure Proxmox Host
+# =============================================================================
+# Play 1: Host configuration
+# Runs directly on the Proxmox host over SSH with become: true.
+# Covers OS-level setup: packages, networking, storage, microcode, and
+# preparing the ZFS mount points for the NAS container.
+# =============================================================================
+- name: Configure Proxmox host
   hosts: proxmox_host
   become: true
-  vars:
-  # Proxmox API connection
-    proxmox_api_host: "{{ lookup('env', 'PROXMOX_API_HOST') | default('localhost', true) }}"
-    proxmox_api_user: "{{ lookup('env', 'PROXMOX_API_USER') | default('root@pam', true) }}"
-    proxmox_api_token_id: "{{ lookup('env', 'PROXMOX_API_TOKEN_ID') | default(omit, true) }}"
-    proxmox_api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') | default(omit, true) }}"
-    proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve', true) }}"
 
   roles:
-    - proxmox_setup
-    - networking
-    - debian_template
-    - vm_instance
-    - storage_lvm
-    - storage_zfs
-    - nas
-    - samba
+    - proxmox_setup # packages, microcode, pve_post_install
+    - networking # vmbr0 bridge, /etc/network/interfaces
+    - storage_lvm # LVM thin pool for VM disks
+    - storage_zfs # ZFS mirror pool + datasets
+    - nas # ZFS dataset ownership (host_setup.yml only)
+    - samba # Samba server inside the future NAS LXC
+
+# =============================================================================
+# Play 2: Proxmox API tasks
+# Runs on localhost (the control machine). Makes API calls to Proxmox to
+# create the Debian template, clone VMs, and provision the NAS LXC container.
+# No SSH to the Proxmox host; no become needed.
+# =============================================================================
+- name: Provision Proxmox VMs and containers via API
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/proxmox_host.yml
+
+  roles:
+    - debian_template # download cloud image, create and configure template VM
+    - vm_instance # clone template to a running VM
+
+  tasks:
+    - name: Provision NAS LXC container
+      ansible.builtin.include_role:
+        name: nas
+        tasks_from: container.yml

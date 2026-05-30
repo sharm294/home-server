@@ -2,26 +2,51 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
+- name: Check if ZFS pool exists
+  ansible.builtin.command: zpool list {{ zfs_pool_name }}
+  register: zpool_check
+  failed_when: false
+  changed_when: false
+
 - name: Create ZFS mirrored pool
-  ansible.builtin.command: zpool create -o ashift=12 {{ zfs_pool_name }} mirror {{ zfs_drive_1 }} {{ zfs_drive_2 }}
-  register: zpool_result
-  failed_when: zpool_result.rc not in [0, 1]
-  changed_when: zpool_result.rc == 0
+  ansible.builtin.command: >
+    zpool create -o ashift=12 {{ zfs_pool_name }}
+    mirror {{ zfs_drive_1 }} {{ zfs_drive_2 }}
+  when: zpool_check.rc != 0
+  changed_when: true
+
+- name: Check if Proxmox ZFS storage entry exists
+  ansible.builtin.command: pvesm status --storage zfs-storage
+  register: zfs_storage_check
+  failed_when: false
+  changed_when: false
 
 - name: Add ZFS pool to Proxmox storage
-  ansible.builtin.command: pvesm add zfspool zfs-storage -pool {{ zfs_pool_name }} -content images,rootdir
-  register: zfs_storage_result
-  failed_when: zfs_storage_result.rc not in [0, 256]
-  changed_when: zfs_storage_result.rc == 0
+  ansible.builtin.command: >
+    pvesm add zfspool zfs-storage
+    -pool {{ zfs_pool_name }}
+    -content images,rootdir
+  when: zfs_storage_check.rc != 0
+  changed_when: true
+
+- name: Check if media_root dataset exists
+  ansible.builtin.command: zfs list {{ zfs_pool_name }}/media_root
+  register: media_check
+  failed_when: false
+  changed_when: false
 
 - name: Create ZFS media_root dataset
   ansible.builtin.command: zfs create {{ zfs_pool_name }}/media_root
-  register: media_result
-  failed_when: media_result.rc not in [0, 1]
-  changed_when: media_result.rc == 0
+  when: media_check.rc != 0
+  changed_when: true
+
+- name: Check if NAS dataset exists
+  ansible.builtin.command: zfs list {{ zfs_pool_name }}/nas
+  register: nas_check
+  failed_when: false
+  changed_when: false
 
 - name: Create ZFS NAS dataset
   ansible.builtin.command: zfs create {{ zfs_pool_name }}/nas
-  register: nas_result
-  failed_when: nas_result.rc not in [0, 1]
-  changed_when: nas_result.rc == 0
+  when: nas_check.rc != 0
+  changed_when: true

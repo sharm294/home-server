@@ -2,17 +2,18 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-pve_api_host: pve_node_ip
-node: node_name
-
-pve_iso_storage: iso
-pve_snippets_storage: templates
-pve_template_storage: templates
-
-ci_user_name: username
-ci_user_password_hash: # mkpasswd --method=SHA-512 --rounds=4096mkpasswd --method=SHA-512 --rounds=4096
-
-disk_format: qcow2
+# This file has been superseded by group_vars/.
+#
+# Variable locations after reorganization:
+#
+#   group_vars/all.yml           — nas_user/group/uid/gid, zfs_pool_name
+#   group_vars/proxmox_host.yml  — proxmox_api_*, proxmox_node, networking,
+#                                  storage IDs, drive paths
+#   host_vars/<hostname>.yml     — per-host overrides (drive paths, gateway)
+#
+# The `templates:` block below is retained here as a reference for the
+# debian_template role variables. Move these into group_vars/proxmox_host.yml
+# or host_vars/ once the template role is stable.
 
 templates:
   debian:

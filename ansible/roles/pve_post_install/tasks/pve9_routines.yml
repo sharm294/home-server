@@ -12,14 +12,18 @@
 - name: Migrate to deb822 sources format (PVE 9.x)
   block:
     - name: Backup and disable legacy sources.list
-      ansible.builtin.shell: |
-        if grep -qE '^\s*deb ' /etc/apt/sources.list 2>/dev/null; then
-          cp /etc/apt/sources.list /etc/apt/sources.list.bak
-          sed -i '/^\s*deb /s/^/# Disabled by Proxmox Helper Script /' /etc/apt/sources.list
-        fi
-      changed_when: false
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          if grep -qE '^\s*deb ' /etc/apt/sources.list 2>/dev/null; then
+            cp /etc/apt/sources.list /etc/apt/sources.list.bak
+            sed -i '/^\s*deb /s/^/# Disabled by Proxmox Helper Script /' /etc/apt/sources.list
+            echo "__changed__"
+          fi
+      register: sources_list_backup
+      changed_when: "'__changed__' in sources_list_backup.stdout"
 
-    - name: Find and backup legacy .list files
+    - name: Find legacy .list files
       ansible.builtin.find:
         paths: /etc/apt/sources.list.d
         patterns: "*.list"
@@ -27,12 +31,16 @@
       register: legacy_list_files
 
     - name: Rename legacy .list files to .bak
-      ansible.builtin.shell: |
-        for f in {{ legacy_list_files.files | map(attribute='path') | join(' ') }}; do
-          mv "$f" "$f.bak"
-        done
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          for f in {{ legacy_list_files.files | map(attribute='path') | join(' ') }}; do
+            mv "$f" "$f.bak"
+          done
+          echo "__changed__"
+      register: rename_result
       when: legacy_list_files.matched > 0
-      changed_when: false
+      changed_when: "'__changed__' in rename_result.stdout"
 
 - name: Remove bookworm and proxmox entries from sources.list
   ansible.builtin.lineinfile:
@@ -66,7 +74,6 @@
 
 - name: Manage pve-enterprise component
   when: pve_disable_enterprise
-
   block:
     - name: Find PVE source files
       ansible.builtin.find:
@@ -95,10 +102,10 @@
     - name: Disable pve-enterprise component
       ansible.builtin.debug:
         msg: pve-enterprise component handling (currently disabled in tasks, can be enabled via user interaction)
-        when: pve_enterprise_check == "exists"
+      when: pve_enterprise_check == "exists"
+
 - name: Manage pve-no-subscription component
   when: pve_enable_no_subscription
-
   block:
     - name: Find PVE source files for no-subscription check
       ansible.builtin.find:
@@ -135,6 +142,7 @@
           Signed-By: /usr/share/keyrings/proxmox-release-bullseye.gpg
         mode: "0644"
       when: pve_no_subscription_check == "notfound"
+
 - name: Setup Ceph repositories for PVE 9
   ansible.builtin.copy:
     dest: /etc/apt/sources.list.d/ceph-quincy-and-reef.sources

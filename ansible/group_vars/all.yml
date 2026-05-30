@@ -1,0 +1,20 @@
+# Copyright (c) 2026 sharm294
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+# ---------------------------------------------------------------------------
+# NAS user/group identity
+# Shared by the nas, samba, and storage_zfs roles. Defined here once so that
+# UIDs/GIDs are guaranteed to be consistent across every role that touches
+# the same filesystem objects.
+# ---------------------------------------------------------------------------
+nas_user: nas_admin
+nas_group: nas_users
+nas_uid: 101000
+nas_gid: 110000
+
+# ---------------------------------------------------------------------------
+# ZFS pool name
+# Shared by storage_zfs (creates the pool) and nas (mounts datasets from it).
+# ---------------------------------------------------------------------------
+zfs_pool_name: storage

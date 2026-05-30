@@ -2,14 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-lxc_template_url: local
+# nas_user, nas_group, nas_uid, nas_gid, and zfs_pool_name are defined in
+# group_vars/all.yml so they stay consistent with the samba and storage_zfs roles.
+
+lxc_template_storage: local
 lxc_template_name: debian-13-standard_13.1-2_amd64.tar.zst
 lxc_container_id: 1000
 lxc_container_password: changeme
 lxc_container_cores: 1
 lxc_container_memory: 1024
-lxc_nas_gid: 110000
-lxc_nas_uid: 101000
-lxc_nas_user: nas_admin
-lxc_nas_group: nas_users
-zfs_pool_name: storage
